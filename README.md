@@ -6,7 +6,7 @@ so far this program is incomplete however any imporvments or suggestions is more
 - which
 - bash/dash
 - curl
-= wget
+- wget
 - git
 - find
 
@@ -47,3 +47,6 @@ Must have functions:
 
 # IMPORTANT:
 the ```USER_WIDE_INSTALLATION``` is used to tell the user installing the package that the file will not be downloaded to ```$HOME/.local/BPM/pkgs/``` but instead it will be a system wide install
+
+
+Since i only use xbps package manager for my system the check_dependecy function may not work for other package managers as i found information about them only by google and they haven't been tested
