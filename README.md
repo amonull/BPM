@@ -6,6 +6,7 @@ so far this program is incomplete however any imporvments or suggestions is more
 - improve function to remove pakcages
 - create a proper start point
 - add flags to use all functionalities
+- create different repo to hold package files for $HOME/.local/BPM/repo-list/official-repo/
 
 # Dependecies:
 - grep
