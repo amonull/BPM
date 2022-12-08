@@ -103,13 +103,13 @@ check_dependencies () {
 download_package () {
     tmp_dir=$(mktemp -d -t BPM.XXXXXXXXXX)
 
-    if [ $USER_WIDE_INSTALLATION ]; then
+    if $USER_WIDE_INSTALLATION; then
         echo "Program will not install in $HOME/.local/BPM/pkgs/ but will be SYSTEM WIDE."
         while true; do
             read -p "Continue? [y/N]: " yn
             case $yn in
                 [Yy]* ) break;;
-                * ) echo "aborting..."; exit 1;;
+                * ) echo "aborting..."; rm -rf $tmp_dir; exit 1;;
             esac
         done
     fi
@@ -138,13 +138,25 @@ download_package () {
     rm -rf $tmp_dir
 }
 
-# check_updates () {
+check_updates () {
+    package_update=""
+    for package in $(ls $HOME/.local/BPM/pkgs/); do
+        source_pkg $package
+        if [ "$_version" -ne $($package --version) ]; then
+            package_update="${package_update} $package"
+        fi
+    done
+    return package_update
+    # to list them print this
+}
 
-# }
-
-# update_packages () {
-
-# }
+update_packages () {
+    needed_updates=$(check_dependencies)
+    # redownloading package to update it
+    source_pkg $@
+    check_dependencies
+    download_package
+}
 
 remove_package () {
     remove_cmd # command created inside sourced file
