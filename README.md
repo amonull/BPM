@@ -24,9 +24,9 @@ for this program to work paths ```$HOME/.local/BPM/pkgs/ && $HOME/.local/BPM/rep
 to install a program create ```<name>.<download_method>.sh``` file in ```$HOME/.local/BPM/repo-list/{official-repo,user-repo}``` inside the file some variables 
 
 MUST be set:
-- USER_WIDE_INSTALLATION=true or false this var is still buggy and will be improved soon
-- DOWNLOAD_METHOD="git clone", "wget", "curl" var must start with those strings and can have more options defined
-- URL=url to download file
+- USER_WIDE_INSTALLATION= ```true``` or ```false```
+- DOWNLOAD_METHOD= ```"git clone"```, ```"wget"```, ```"curl"``` var must start with those strings and can have more options defined
+- URL= url to download file
 
 optional vars:
 - DEPENDENCIES_XBPS=
