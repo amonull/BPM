@@ -1,0 +1,253 @@
+#!/bin/sh
+
+[ "$(id -u)" -eq 0 ] && echo "BPM must be run as non-root" && exit 1 # check if user is root (works on dash and bash)
+
+packages_path="$HOME/.local/BPM/pkgs"
+repos_path="$HOME/.local/BPM/repo-list"
+
+source_pkg () {
+    # finding file
+    FILE_PATH=$(find $repos_path -name $@* 2> /dev/null)
+    AMOUNT_FOUND=$(find $repos_path -name $@* 2> /dev/null | wc -l) # calling $FILE_PATH in this command or when checking if this command is above 1 PREMISSION ERROR is given
+    
+    # if more than 1 file returned give error
+    # [ "$($FILE_PATH | wc -l)" -gt 1 ] && (echo "too many packages found be more specific"; exit 1)
+    [ "$AMOUNT_FOUND" -gt 1 ] && (echo "found packages\n\n$FILE_PATH\n\nbe more specific"; exit 1)
+    
+    # sourcing file
+    [ -z "$FILE_PATH" ] && (echo "package not found"; exit 1) || . $FILE_PATH
+}
+
+check_dependencies () {
+    # With command below an install script for depndencies can be made as well
+    user_package_manager=$(which dpkg 2> /dev/null || which pacman 2> /dev/null || which zypper 2> /dev/null || which rpm 2> /dev/null || which xbps-install 2> /dev/null || which portage 2> /dev/null)
+    
+    missing_deps=""
+    missing_optional_deps=""
+
+    # I only use xbps (void linux) so other commands haven't been tested and may not work
+    case $user_package_manager in
+        "/usr/bin/dpkg")
+            for dependency in $DEPENDENCIES_DPKG; do
+                dpkg -s $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_DPKG; do
+                dpkg -s $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/pacman")
+            for dependency in $DEPENDENCIES_PACMAN; do
+                pacman -Qs $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_PACMAN; do
+                pacman -Qs $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/zypper")
+            for dependency in $DEPENDENCIES_ZYPPER; do
+                zypper search $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_ZYPPER; do
+                zypper search $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/rpm")
+            for dependency in $DEPENDENCIES_RPM; do
+                rpm -qa | grep -i $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_RPM; do
+                rpm -qa | grep -i $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/xbps-install")
+            for dependency in $DEPENDENCIES_XBPS; do
+                xbps-query -l | awk '{print $2}' | grep -i $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_XBPS; do
+                xbps-query -l | awk '{print $2}' | grep -i $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/portage")
+            # dont know how to search for packages on gentoo
+            for dependency in $DEPENDENCIES_PORTAGE; do
+                which $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_PORTAGE; do
+                which $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        *)
+            echo "your package manager cannot be found. Listing debian (apk) dependencies"
+            for dependency in $DEPENDENCIES_DPKG; do
+                which $dependency > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_DPKG; do
+                which $optional_dependency > /dev/null 2>&1 || missing_optional_deps="${missing_optional_deps} $optional_dependency"
+            done
+            ;;
+        esac
+
+        if [ -n "$missing_optional_deps" ]; then
+            echo "Optional missing dependecies are:"
+            echo $missing_optional_deps | tr ' ' '\n'
+            echo ""
+            # not exiting as it is optional
+        fi
+        if [ -n "$missing_deps" ]; then
+            echo "Required missing dependecies are found:"
+            echo $missing_deps | tr ' ' '\n'
+            exit 1
+        fi
+}
+
+download_package () {
+    tmp_dir=$(mktemp -d -t BPM.XXXXXXXXXX)
+
+    if [ $USER_WIDE_INSTALLATION ]; then
+        echo "Program will not install in $HOME/.local/BPM/pkgs/ but will be SYSTEM WIDE."
+        while true; do
+            read -p "Continue? [y/N]: " yn
+            case $yn in
+                [Yy]* ) break;;
+                * ) echo "aborting..."; exit 1;;
+            esac
+        done
+    fi
+    
+    # DOWNLOAD_METHOD still used in eval incase it has extra options defined
+    case "$DOWNLOAD_METHOD" in
+        # singel quotes ('') needed for eval to treat it as an entire string/command and not setting vars
+        "git clone"*)
+            eval '$DOWNLOAD_METHOD' '$URL' '$tmp_dir' # --quiet
+            ;;
+        "curl"*)
+            eval '$DOWNLOAD_METHOD' '$URL' --output '$tmp_dir/outputFile' --progress-bar # --silent
+            ;;
+        "wget"*)
+            eval '$DOWNLOAD_METHOD' '$URL' -O '$tmp_dir/outputFile' --show-progress --quiet
+            ;;
+        *)
+            rm -rf $tmp_dir # remove tmp_dir
+            echo "package download method is wrong" # stdout error
+            exit 1 # exit program with error value
+            ;;
+    esac
+
+    install_cmd # command created inside sourced file
+
+    rm -rf $tmp_dir
+}
+
+# check_updates () {
+
+# }
+
+# update_packages () {
+
+# }
+
+remove_package () {
+    remove_cmd # command created inside sourced file
+    echo "installed Deps for this package were"
+
+    user_package_manager=$(which dpkg 2> /dev/null || which pacman 2> /dev/null || which zypper 2> /dev/null || which rpm 2> /dev/null || which xbps-install 2> /dev/null || which portage 2> /dev/null)
+    installed_deps=""
+    installed_opt_deps=""
+    case $user_package_manager in
+        "/usr/bin/dpkg")
+            for dependency in $DEPENDENCIES_DPKG; do
+                dpkg -s $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_DPKG; do
+                dpkg -s $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/pacman")
+            for dependency in $DEPENDENCIES_PACMAN; do
+                pacman -Qs $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_PACMAN; do
+                pacman -Qs $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/zypper")
+            for dependency in $DEPENDENCIES_ZYPPER; do
+                zypper search $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_ZYPPER; do
+                zypper search $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/rpm")
+            for dependency in $DEPENDENCIES_RPM; do
+                rpm -qa | grep -i $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_RPM; do
+                rpm -qa | grep -i $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/xbps-install")
+            for dependency in $DEPENDENCIES_XBPS; do
+                xbps-query -l | awk '{print $2}' | grep -i $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_XBPS; do
+                xbps-query -l | awk '{print $2}' | grep -i $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        "/usr/bin/portage")
+            # dont know how to search for packages on gentoo
+            for dependency in $DEPENDENCIES_PORTAGE; do
+                which $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_PORTAGE; do
+                which $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        *)
+            echo "your package manager cannot be found. Listing debian (apk) dependencies"
+            for dependency in $DEPENDENCIES_DPKG; do
+                which $dependency > /dev/null 2>&1 && installed_deps="${installed_deps} $dependency"
+            done
+            for optional_dependency in $OPTIONAL_DEPENDENCIES_DPKG; do
+                which $optional_dependency > /dev/null 2>&1 && installed_opt_deps="${installed_opt_deps} $optional_dependency"
+            done
+            ;;
+        esac
+
+        if [ -n "$installed_deps" ]; then
+            echo "Required:"
+            echo $installed_deps | tr ' ' '\n'
+        fi
+        if [ -n "$installed_opt_deps" ]; then
+            echo "Optional:"
+            echo $installed_opt_deps | tr ' ' '\n'
+        fi
+
+        exit 0
+}
+
+# sync_repos () {
+
+# }
+
+search_package () {
+    # CONSIDER REMOVING FUNCTION AND ONLY DOING AFTER FLAG IS CALLED
+    find $repos_path -name $@* 2> /dev/null | awk -F "/" '{print $NF}' | awk -F "." '{print $1}'
+}
+
+print_usage() {
+    echo "usage: bpm [option(s)] [package]"
+    # TODO: add flags to use
+}
+
+#####################
+#### START POINT ####
+#####################
+
+source_pkg $@
+check_dependencies
+download_package
+# search_package $@
+# remove_package
+
+exit 0
