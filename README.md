@@ -2,7 +2,7 @@
 so far this program is incomplete however any imporvments or suggestions is more than welcom.
 
 # TODO:
-- add functions to update packages and sync repos
+- add functions to update packages and sync repos (temporarily done (untested) needs improvments)
 - improve function to remove pakcages
 - create a proper start point
 - add flags to use all functionalities
