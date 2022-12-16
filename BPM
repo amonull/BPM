@@ -1,5 +1,10 @@
 #!/bin/sh
 
+
+#IMPORTANT:
+#CONSIDER USING install COMMAND (check pacman/aur PKGBUILD for examples)
+
+
 [ "$(id -u)" -eq 0 ] && echo "BPM must be run as non-root" && exit 1 # check if user is root (works on dash and bash)
 
 packages_path="$HOME/.local/BPM/pkgs"
@@ -20,7 +25,12 @@ source_pkg () {
 
 check_dependencies () {
     # With command below an install script for depndencies can be made as well
-    user_package_manager=$(which dpkg 2> /dev/null || which pacman 2> /dev/null || which zypper 2> /dev/null || which rpm 2> /dev/null || which xbps-install 2> /dev/null || which portage 2> /dev/null)
+    user_package_manager=$( which dpkg 2> /dev/null ||          # deb based
+                            which pacman 2> /dev/null ||        # arch based
+                            which zypper 2> /dev/null ||        # suse based
+                            which rpm 2> /dev/null ||           # red hat based
+                            which xbps-install 2> /dev/null ||  # void ased
+                            which portage 2> /dev/null )        # gentoo based
     
     missing_deps=""
     missing_optional_deps=""
@@ -94,26 +104,26 @@ check_dependencies () {
             # not exiting as it is optional
         fi
         if [ -n "$missing_deps" ]; then
-            echo "Required missing dependecies are found:"
+            echo "Required missing dependecies are:"
             echo $missing_deps | tr ' ' '\n'
-            exit 1
+            exit 1 # exiting as it is Required
         fi
 }
 
 download_package () {
-    tmp_dir=$(mktemp -d -t BPM.XXXXXXXXXX)
-
     if $USER_WIDE_INSTALLATION; then
         echo "Program will not install in $HOME/.local/BPM/pkgs/ but will be SYSTEM WIDE."
         while true; do
             read -p "Continue? [y/N]: " yn
             case $yn in
                 [Yy]* ) break;;
-                * ) echo "aborting..."; rm -rf $tmp_dir; exit 1;;
+                * ) echo "aborting..."; exit 1;;
             esac
         done
     fi
     
+    tmp_dir=$(mktemp -d -t BPM.XXXXXXXXXX)
+
     # DOWNLOAD_METHOD still used in eval incase it has extra options defined
     case "$DOWNLOAD_METHOD" in
         # singel quotes ('') needed for eval to treat it as an entire string/command and not setting vars
@@ -127,9 +137,9 @@ download_package () {
             eval '$DOWNLOAD_METHOD' '$URL' -O '$tmp_dir/outputFile' --show-progress --quiet
             ;;
         *)
-            rm -rf $tmp_dir # remove tmp_dir
-            echo "package download method is wrong" # stdout error
-            exit 1 # exit program with error value
+            rm -rf $tmp_dir
+            echo "package download method is wrong"
+            exit 1
             ;;
     esac
 
@@ -153,9 +163,12 @@ check_updates () {
 update_packages () {
     needed_updates=$(check_dependencies)
     # redownloading package to update it
-    source_pkg $@
-    check_dependencies
-    download_package
+    for package in $needed_updates; do
+        source_pkg $package
+        check_dependencies
+        download_package
+    done
+    echo "done updating"
 }
 
 remove_package () {
@@ -243,7 +256,7 @@ remove_package () {
 # }
 
 search_package () {
-    # CONSIDER REMOVING FUNCTION AND ONLY DOING AFTER FLAG IS CALLED
+    # CONSIDER REMOVING FUNCTION AND ONLY DOING COMMAND BELOW AFTER FLAG IS CALLED
     find $repos_path -name $@* 2> /dev/null | awk -F "/" '{print $NF}' | awk -F "." '{print $1}'
 }
 
