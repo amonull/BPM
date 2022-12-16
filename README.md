@@ -8,7 +8,7 @@ so far this program is incomplete however any imporvments or suggestions is more
 - add flags to use all functionalities
 - create different repo to hold package files for $HOME/.local/BPM/repo-list/official-repo/
 - add correct licences to packages
-- correctly download the nececery licences on to specified dirs (most likely $HOME/.local/BPM/licences/<pkg>/<licecenc>
+- correctly download the nececery licences on to specified dirs (most likely $HOME/.local/BPM/licences/\<pkg\>/\<licecence\>
 
 # Dependecies:
 - grep
