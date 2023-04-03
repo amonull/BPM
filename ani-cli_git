@@ -1,0 +1,46 @@
+#!/bin/sh
+
+name="ani-cli"
+version=$(curl -s "https://api.github.com/repos/pystardust/ani-cli/tags" | grep -Po '"name":.*?[^\\]",' | head -n 1 | awk -F'\"' '{print $4}' | sed "s/v//")
+DOWNLOAD_METHOD="git clone"
+URL="https://github.com/pystardust/ani-cli.git"
+exe_path="$packages_path/$name" # path to where executable is
+
+# VOID
+DEPENDENCIES_XBPS="grep sed awk curl openssl mpv ffmpeg fzf"
+OPTIONAL_DEPENDENCIES_XBPS=""
+# DEBIAN
+DEPENDENCIES_DPKG="grep sed awk curl openssl mpv ffmpeg fzf"
+OPTIONAL_DEPENDENCIES_DPKG=""
+# ARCH
+DEPENDENCIES_PACMAN="grep sed awk curl openssl mpv ffmpeg fzf"
+OPTIONAL_DEPENDENCIES_PACMAN=""
+# FEDORA
+DEPENDENCIES_RPM="grep sed awk curl openssl mpv ffmpeg fzf"
+OPTIONAL_DEPENDENCIES_RPM=""
+# SUSE
+DEPENDENCIES_ZYPPER="grep sed awk curl openssl mpv ffmpeg fzf"
+OPTIONAL_DEPENDENCIES_ZYPPER=""
+# GENTOO
+DEPENDENCIES_PORTAGE="grep sed awk curl openssl mpv ffmpeg fzf"
+OPTIONAL_DEPENDENCIES_PORTAGE=""
+
+# program to install the program (required)
+install_cmd () {
+  install -Dm755 "$tmp_dir/$name" "$packages_path"
+}
+
+# command to update the program (required)
+update_cmd () {
+  ani-cli -U > /dev/null 2>&1 || exit 1
+}
+
+# command to remove the program (required)
+remove_cmd () {
+    rm -f "$packages_path/$name"
+}
+
+# command to run the program (optional)
+run_cmd () {
+  ani-cli
+}
