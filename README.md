@@ -10,7 +10,7 @@ so far this program is incomplete however any imporvments or suggestions is more
 # Dependecies:
 - grep
 - which
-- bash/dash
+- posix shell
 - curl
 - wget
 - git
