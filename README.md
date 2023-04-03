@@ -4,9 +4,6 @@ so far this program is incomplete however any imporvments or suggestions is more
 # TODO:
 - add functions to update packages and sync repos (temporarily done (untested) needs improvments)
 - improve function to remove pakcages
-- create a proper start point
-- add flags to use all functionalities
-- create different repo to hold package files for $HOME/.local/BPM/repo-list/official-repo/
 - add correct licences to packages
 - correctly download the nececery licences on to specified dirs (most likely $HOME/.local/BPM/licences/\<pkg\>/\<licecence\>
 
@@ -26,7 +23,6 @@ for this program to work paths ```$HOME/.local/BPM/pkgs/ && $HOME/.local/BPM/rep
 to install a program create ```<name>.<download_method>.sh``` file in ```$HOME/.local/BPM/repo-list/{official-repo,user-repo}``` inside the file some variables 
 
 MUST be set:
-- USER_WIDE_INSTALLATION= ```true``` or ```false```
 - DOWNLOAD_METHOD= ```"git clone"```, ```"wget"```, ```"curl"``` var must start with those strings and can have more options defined
 - URL= url to download file
 
