@@ -1,0 +1,42 @@
+CONSIDER USING install COMMAND (check pacman/aur PKGBUILD for examples)
+
+BPM (basic package manager)
+
+package manager that builds packages from source.
+no need for servers or "repos".
+2 types of repose avaliable.
+    official - list of sh files that hold variables, required dependencies, paths and build tools to build that application
+    user - like official but has user made packages
+updates itself 
+repos are in github so uses git diff/git pull to update packages
+extremly simple to make packages for and is designed for simplicity.
+
+PATHS:
+    to intergate with the system may use system paths like $HOME/.local/bin
+    or make go with seperated way of making it:
+        for user packages have .bpm-packages/ to hold all packages and put it on path and sym link .desktop files to $HOME/.local/share/application/
+        for system packages have /usr/local/bin/bpm-packages/ OR /opt/bpm-packages/ and sym link .desktop files to /usr/share/applications/
+PATHS UPDATED:
+    go with $HOME/.local/bin/BPM/ so the program can see what packages are installed and remove them accordingly but allow the user to change install dir with -d {path}.
+    this would allow BPM to better intergate application to system and remove it easier.
+    also would allow for a gui application to be built allowing the user to see installed applications by displaying that dir.
+
+
+allow user to change path application ends up on
+
+use curl/git to download packages
+
+uses make or any other download method described in the git README to update packages.
+
+packages inside repos needs manual maintance but can be made automatic by scraping said websites
+
+allow downloading binaries from release on github/gitlab
+
+repo types/names:
+    package-name.version.git   GIT PACKAGES
+    OR
+    package-name.version.bin   BINARY PACKAGES
+    OR
+    package-name.version       OTHER SOURCE PACKAGES
+
+other source and git packages needs manual building but binary only needs system intergation

@@ -1,9 +1,50 @@
 #!/bin/sh
 
+# TODO: read downloaded and avaliable pkgs form an sqlite db (should make working with it faster)
+# IDEAS:
+#   checking pkgs use sqlite commands to check if item is in db
+#   keep install instructions inside the db:
+#     would mean making flag to compile sh command into the db and updating the db
+#   download with purly db instructions
+#   keep support for using sh without the db (as it is done now)
+
 [ "$(id -u)" -eq 0 ] && echo "BPM must be run as non-root" && exit 1
 
-packages_path="$HOME/.local/BPM/pkgs"
-repos_path="$HOME/.local/BPM/repo-list"
+_version="0.1_alpha"
+
+packages_path="$HOME/.local/BPM/pkgs/"
+# repos_path="$HOME/.local/BPM/repo-list"
+repos_path="$HOME/.local/share/BPM/repos/"
+licence_path="$HOME~/.local/share/BPM/LICENCES/"
+
+init () {
+  if [ ! "$repos_path" ]; then
+    git clone https://github.com/amonull/BPM
+    mkdir -p "$repos_path"
+    mv ./BPM/repo/main-repo.db "$repos_path"
+    rm -rf ./BPM
+  fi
+
+  if [ ! "$packages_path" ]; then
+    mkdir -p "$packages_path"
+  fi
+
+  if [ ! "$licence_path" ]; then
+    mkdir -p "$licence_path"
+  fi
+
+  is_on_path=0
+
+  case :$PATH: in
+    *:"$packages_path":*)
+      is_on_path=1
+      ;;
+  esac
+
+  if [ ! $is_on_path ]; then
+    echo "$packages_path is not on path."
+  fi
+}
 
 source_pkg () {
   # finding file
@@ -249,7 +290,7 @@ remove_package () {
     exit 0
 }
 
-print_usage() {
+usage() {
   echo "usage:" 
   echo "  bpm [option(s)] [package]"
   echo "  bpm [option(s)]"
@@ -270,6 +311,8 @@ print_usage() {
   echo "  -R, --run, <program name>"
   echo "      run an installed program"
   echo "      IMPORTANT: will not run in program doesn't have run_cmd() defined in its template"
+  echo "  -v --version"
+  echo "      print version"
   echo "  -h, --help"
   echo "      print this screen"
 }
@@ -278,7 +321,9 @@ print_usage() {
 #### START POINT ####
 #####################
 
-[ $# -lt 1 ] && echo "not enough parameters supplied" && exit 1
+init
+
+[ $# -lt 1 ] && (echo "not enough parameters supplied"; usage) && exit 1
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -315,14 +360,18 @@ while [ $# -gt 0 ]; do
       source_pkg "$*"
       run_cmd
       ;;
+    -v | --version)
+      echo $_version
+      exit 0
+      ;;
     -h | --help)
-      print_usage
+      usage
       exit 0
       ;;
     *)
       echo "no flags supplied"
       echo ""
-      print_usage
+      usage
       exit 1
       ;;
   esac
