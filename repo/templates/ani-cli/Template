@@ -1,0 +1,15 @@
+Name="ani-cli"
+Version="4.4"
+Revision="1"
+
+BPM_deps=""
+Host_deps="grep sed curl mpv aria2c ffmpeg fzf"
+
+URL="https://github.com/pystardust/ani-cli/releases/download/v4.4/ani-cli https://github.com/pystardust/ani-cli/releases/download/v4.4/ani-cli.1"
+Bin_name="ani-cli"
+
+Manpages="ani-cli.1"
+Libs=""
+Completions=""
+Desktop="{TEMPLATE}/ani-cli.desktop"
+Uninstall_paths="$HOME/.local/share/BPM/pkgs/ani-cli $HOME/.local/share/BPM/man/man1/ani-cli.1 $HOME/.local/share/applications/ani-cli.desktop"

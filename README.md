@@ -24,19 +24,30 @@ Structure of db:
 - table named -> instructions
     - hold build, update instructions for a package, uninstall paths
 
+# Installation
+1. clone this repo into `$HOME/.local/share/`
+2. add `$HOME/.local/share/BPM/pkgs/` to path
+
+> todo below (not yet implemented)
+
+main-repo.db already has installation and updating instructions inside it so `bpm` can update itself, to update `bpm` run `bpm --self-update`.
+
+It updates itself by using git pull
+
 # TODO:
 - add functions to update packages and sync repos (temporarily done (untested) needs improvments)
 - improve function to remove pakcages
 - add correct licences to packages
 - correctly download the nececery licences on to specified dirs (most likely $HOME/.local/BPM/licences/\<pkg\>/\<licecence\>
 
+# IMPORTANT -> ALL INFO BELOW IS OUTDATED AND NEEDS TO BE UPDATED
+
 # Dependecies:
 - grep
 - which
-- posix shell
+- posix shell (like dash)
 - curl
-- wget
-- git
+- git (optional but some packages need for building itslef)
 - find
 
 # required paths
