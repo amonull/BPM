@@ -5,7 +5,18 @@
 _version="v0.1_alpha"
 
 packages_path="$HOME/.local/BPM/pkgs/"
+manpages_path="$HOME/.local/BPM/man/"
+completion_path="$HOME/.local/BPM/completions/"
+desktop_path="$HOME/.local/BPM/applications/"
 repos_path="$HOME/.local/share/BPM/repos/"
+
+# [ flags ]
+no_sqlite=0
+verbose=0
+
+#############################################
+################### MISC ####################
+#############################################
 
 init () {
   if [ ! "$repos_path" ]; then
@@ -15,8 +26,16 @@ init () {
     rm -rf ./BPM
   fi
 
-  if [ ! "$packages_path" ]; then
+  if [ ! -d "$packages_path" ]; then
     mkdir -p "$packages_path"
+  fi
+
+  if [ ! -d "$manpages_path" ]; then
+    mkdir -p "$manpages_path"
+  fi
+
+  if [ ! -d "$desktop_path" ]; then
+    mkdir -p "$desktop_path"
   fi
 
   is_on_path=0
@@ -30,6 +49,15 @@ init () {
   if [ ! $is_on_path ]; then
     echo "$packages_path is not on path."
   fi
+}
+
+parse_patches_str () {
+  patch_str="$2"
+  for num in $1; do
+    echo "$patch_str" | head -n "$num"
+    num=$((num+1))
+    patch_str="$(echo "$patch_str" | tail -n +$num)"
+  done
 }
 
 #############################################
@@ -51,42 +79,270 @@ template_source() {
     exit 1
   fi
 
-  pkg_name=$(grep "Name" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Name parameter not found"; exit 1))
-  pkg_version=$(grep "Version" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Version parameter not found"; exit 1))
-  pkg_revision=$(grep "Revision" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Revision parameter not found"; exit 1))
-  pkg_BPM_deps=$(grep "BPM_deps" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ") # BPM_deps optional
-  pkg_host_deps=$(grep "Host_deps" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ") # Host_deps optional
-  pkg_URL=$(grep "URL" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "URL not found"; exit 1))
-  pkg_bin_name=$(grep "Bin_name" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Bin_name not found"; exit 1))
-  pkg_manpages=$(grep "Manpages" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ")
-  pkg_libs=$(grep "Libs" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ")
-  pkg_completion=$(grep "Completion" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ")
-  pkg_uninstall_paths=$(grep "Uninstall_paths" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ")
-  pkg_desktop=$(grep "Desktop" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || " ")
-  pkg_build="$FILE_PATH/build.sh"
-  pkg_patches="$FILE_PATH/patches/"
+  pkg_name="$(grep "Name" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Name parameter not found"; exit 1))"
+  pkg_version="$(grep "Version" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Version parameter not found"; exit 1))"
+  pkg_revision="$(grep "Revision" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Revision parameter not found"; exit 1))"
+  pkg_bpm_deps="$(grep "BPM_deps" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"')"
+  pkg_host_deps="$(grep "Host_deps" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ; { print $2 }' | tr -d '"')"
+  pkg_conflicts="$(grep "Conflicts" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ; { print $2 }' | tr -d '"')"
+  pkg_URL="$(grep "URL" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "URL not found"; exit 1))"
+  pkg_bin_name="$(grep "Bin_name" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"')"
+  pkg_manpages="$(grep "Manpages" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"')"
+  pkg_completion="$(grep "Completion" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"')"
+  pkg_desktop="$(grep "Desktop" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"')"
+  pkg_uninstall_paths="$(grep "Uninstall_paths" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ;  { print $2 }' | tr -d '"' || (echo "Uninstall_paths parameter not found"; exit 1))"
+  pkg_build="$( [ -f "$FILE_PATH/build.sh" ] && cat "$FILE_PATH/build.sh" 2> /dev/null)"
+  pkg_patches_path="$FILE_PATH/patches/"
+  pkg_checksum=$(grep "Checksum" "$TEMPLATE_PATH" | awk 'BEGIN { FS = "=" } ; { print $2 }' | tr -d '"' || " ")
 
-  if echo "$pkg_manpages" | grep -x "Manpages=\"{TEMPLATE}.*\"" > /dev/null 2>&1; then
-    pkg_manpages=$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$FILE_PATH|g" > /dev/null 2>&1)
+  if [ ! "$pkg_bin_name" ]; then
+    pkg_bin_name=$pkg_name
   fi
 
-  if echo "$pkg_completion" | grep -x "Completion=\"{TEMPLATE}.*\"" > /dev/null 2>&1; then
-    pkg_completion=$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$FILE_PATH|g" > /dev/null 2>&1)
+  pkg_patches=""
+  for file in "$pkg_patches_path"/*; do
+    pkg_patches="$pkg_patches$(cat "$file" 2> /dev/null)"
+    pkg_patches="$pkg_patches$(printf '\n\n%s\n\n%s' "=>---<=" " ")"
+    # TODO: use printf to do fomratting and remeber echo $foo and echo "$foo" are different
+    # (echo "$foo" formats txt while echo $foo doesn't)
+    # use printf to provide \n formatting as echo doesn't have flags in posix sh and -e flag needed for formatting
+    # XXX: echo "$pkg_patches" | head -n -4 | head -n $(echo "$pkg_patches"  | head -n -4 | grep -n "=>--<=" | awk 'BEGIN { FS = ":"} ; {print $1}')
+    # use above to grab different parts of formatted txt
+  done
+  pkg_patches_num_list=$(echo "$pkg_patches" | grep -n "=>---<=" | awk 'BEGIN { FS = ":" } ; { print $1 }') # used in parse_patches_str at $1
+
+  if echo "$pkg_manpages" | grep -qx "Manpages=\"{TEMPLATE}.*\""; then
+    pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$FILE_PATH|g" > /dev/null 2>&1)"
   fi
 
-  if echo "$pkg_desktop" | grep -x "Desktop=\"{TEMPLATE}.*\"" > /dev/null 2>&1; then
-    pkg_desktop=$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$FILE_PATH|g" > /dev/null 2>&1)
+  if echo "$pkg_completion" | grep -qx "Completion=\"{TEMPLATE}.*\""; then
+    pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$FILE_PATH|g" > /dev/null 2>&1)"
+  fi
+
+  if echo "$pkg_desktop" | grep -qx "Desktop=\"{TEMPLATE}.*\""; then
+    pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$FILE_PATH|g" > /dev/null 2>&1)"
   fi
 }
 
 DB_source () {
-  echo HERE
+  echo TODO
 }
 
 #############################################
-############# PKG DOWNLOAD ##################
+################# DB FUNCS ##################
 #############################################
 
-template_source "package-name"
+add_to_db () {
+  # TODO: db format not yet complete finish this after that
 
-echo "$pkg_name"
+  # prep data
+  if [ ! "$pkg_bpm_deps" ]; then
+    pkg_bpm_deps=NULL
+  fi
+
+  if [ ! "$pkg_host_deps" ]; then
+    pkg_host_deps=NULL
+  fi
+
+  sqlite3 "$@" "INSERT TO deps (bpm_deps, host_deps) VALUES ($pkg_bpm_deps, $pkg_host_deps)"
+  deps_id="$(sqlite3 "$@" "SELECT MAX(id) FROM deps")"
+
+  # sqlite3 "$*" "INSERT TO instructions () VALUES ()"
+  instructions_id="$(sqlite3 "$@")"
+
+  sqlite3 "$@" "INSERT TO pkgs (name, version, revision, deps, instructions) VALUES ($pkg_name, $pkg_version, $pkg_revision, $deps_id, $instructions_id)"
+}
+
+remove_from_db () {
+  pkg_to_remove=$(sqlite3 "$1" "SELECT name FROM pkgs WHERE name=$2" -list)
+  
+  if [ "$( echo "$pkg_to_remove" | wc -l > /dev/null 2>&1 )" -lt 1 ]; then
+    echo "$2 not found in $1"
+    exit 1;
+  fi
+
+  if [ "$( echo "$pkg_to_remove" | wc -l > /dev/null 2>&1 )" -gt 1 ]; then
+    read -r -p "found $pkg_to_remove remove all matched pkgs? [y/N]: " response
+    case "$response" in
+      [yY]) 
+        ;;
+      *)
+        exit 1;
+        ;;
+    esac
+  fi
+
+  sqlite3 "$1" "DELETE FROM pkgs WHERE name=$2"
+}
+
+search_db () {
+  sqlite3 "$1" "SELECT name, version, revision FROM pkgs WHERE name=$2" -list | awk 'BEGIN { FS = "|" } ; { print $1"="$2"_"$3 }' || (echo "$2 not found in $1"; exit 1)
+}
+
+#############################################
+################ PKG DOWNLOAD ###############
+#############################################
+
+check_dep () {
+  # checks to dependecies and conflicts
+  
+  conflicting_items=""
+  for item in $pkg_conflicts; do
+    which "$item" > /dev/null 2>&1 || conflicting_items="${conflicting_items} $item"
+  done
+
+  if [ -n "$conflicting_items" ]; then
+    echo "conflicting packages found:"
+    echo "$conflicting_items" | tr ' ' '\n'
+    exit 1
+  fi
+
+  missing_deps=""
+
+  for dependency in $pkg_host_deps; do
+    which "$dependency" > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+  done
+
+  for dependency in $pkg_bpm_deps; do
+    if [ "$missing_deps" ]; then
+      break
+    fi
+    # download pkgs here
+    which "$dependency" > /dev/null 2>&1 || missing_deps="${missing_deps} $dependency"
+  done
+
+  if [ -n "$missing_deps" ]; then
+    echo "Required missing dependecies are:"
+    echo "$missing_deps" | tr ' ' '\n'
+    exit 1 # exiting as it is Required
+  fi
+}
+
+pkg_download_stage_1 () {
+  # gets all files from pkg_URL and puts into /tmp/BPM.XXXXXX/
+  # and does checksum checking
+  
+  tmp_dir="$(mktemp -d -t BPM.XXXXXXXXXX)/"
+
+  if [ "$(echo "$pkg_URL" | grep -q '\.git$')" ]; then
+    git clone "$pkg_URL" "$tmp_dir"
+  else
+    curl "$pkg_URL" -o "$tmp_dir$(echo "$pkg_URL" | awk 'BEGIN { FS = "/" } ; { print $NF }')"
+  fi
+
+  echo TODO: checksums
+}
+
+pkg_download_stage_2 () {
+  # applies patches to files in /tmp/BPM.XXXXXX/
+  # builds pkgs in /tmp/BPM.XXXXXX/
+
+  if [ "$no_sqlite" ]; then
+    for patch in "$pkg_patches_path"/*; do
+      # TODO: check if patch is a diff file using file command
+      patch < "$patch"
+    done
+
+    printf '\n'
+
+    cat "$pkg_build"
+
+    printf '\n'
+
+    read -r -p "Run build script above? [y/N]: " response
+    case "$response" in
+      [yY]) 
+        ;;
+      *)
+        exit 1;
+        ;;
+    esac
+
+    (cd "$tmp_dir"&& sh "$pkg_build")
+  else
+    echo TODO
+  fi
+}
+
+pkg_download_stage_3 () {
+  # moves binaries and other files into their correct places
+
+  # [ BIN ]
+  mv "$tmp_dir/$pkg_bin_name" "$packages_path"
+  
+  # [ MANPAGES ]
+  for manpage in $pkg_manpages; do
+    ends_with=$(echo "$manpage" | awk 'BEGIN { FS = "." } ; { print $2 }')
+    end_path="$manpages_path/man$ends_with/"
+    ln_path="$HOME/.local/share/man/man$ends_with/"
+
+    if [ ! -d "$end_path" ]; then
+      mkdir -p "$end_path"
+    fi
+
+    if [ ! -d "$ln_path" ]; then
+      mkdir -p "$ln_path"
+    fi
+
+    (cd "$tmp_dir" && mv "$manpage" "$end_path") # manpage is either full path or relative path
+
+    ln "$end_path/$manpage" "$ln_path"
+  done
+  echo "manpages added to $ln_path. make sure $ln_path is in /etc/man.conf manpath and to run makewhatis"
+
+  # [ COMPLETION ]
+  for completion in $pkg_completion; do
+    mkdir -p "$completion_path/$pkg_name/"
+    (cd "$tmp_dir" && mv "$completion" "$completion_path/$pkg_name/")
+
+    case $completion in
+      *.fish)
+        ln -s "$completion_path/$pkg_name/$completion" "$HOME/.local/share/fish/generated_completions/"
+        ;;
+      *.bash)
+        ln -s "$completion_path/$pkg_name/$completion" "$HOME/.local/share/bash-completion/completions/"
+        ;;
+      *.zsh)
+        echo TODO
+        ;;
+      *)
+        ;;
+    esac
+  done
+
+  # [ DESKTOP ]
+  (cd "$tmp_dir" && mv "$pkg_desktop" "$desktop_path/")
+  ln -s "$desktop_path/$pkg_desktop" "$HOME/.local/share/applications/"
+}
+
+#############################################
+################# PKG REMOVE ################
+#############################################
+
+rmv_pkg () {
+  for path in $pkg_uninstall_paths; do
+    read -r -p "remove path: \"$path\"? [y/N]: " response
+    case "$response" in
+      [yY]) 
+        ;;
+      *)
+        exit 1;
+        ;;
+    esac
+
+    # TODO:
+    # automatically remove sym links
+    # to do above check if path above
+    # exists (at all as anything)
+    # if it does remove it only then
+    # to avoid errors and bugs
+
+    if [ -h "$path" ]; then
+      unlink "$path"
+    fi
+
+    if [ -f "$path" ]; then
+      rm -rf "$path"
+    fi
+  done
+}

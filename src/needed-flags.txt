@@ -23,6 +23,13 @@ to make sqlite fully optional if sqlite is not found on the system an installed.
 <name>=<version> i.e. bpm=0.1_alpha_1 (last _1 is the revision)
 
 TO TURN OFF sqlite not found using templates only WARNING:
-create file .local/share/BPM/no_sqlite
-as long as that file exists there as normal file that warning will not be shown and sqlite will not be used for any action that doesn't need it
-contents of .local/share/BPM/no_sqlite does not matter
+no_sqlite=0 will be turned to no_sqlite=1
+using a diff file making 2 different pkgs both with the same name (makes them conflict)
+(makes showing using patches and conflicting pkgs better in templates compared to ani-cli)
+
+make file by changing no_sqlite=0 to 1 and use cmd diff sqlite_bpm no_sqlite_bpm > no_sqlite_bpm.patch
+add no_sqlite_bpm.patch to bpm_template/patches/
+add bpm as conflict to bpm-no-sqlite
+add bpm-no-sqlite as conflict to bpm
+(IMPORTANT)
+the two files don't actually conflict its only there to show how to add it.

@@ -176,7 +176,7 @@ download_package () {
       eval '$DOWNLOAD_METHOD' '$URL' '$tmp_dir' # --quiet
       ;;
     "curl"*)
-      eval '$DOWNLOAD_METHOD' '$URL' --output '$tmp_dir/outputFile' --progress-bar # --silent
+eval '$DOWNLOAD_METHOD' '$URL' --output '$tmp_dir/outputFile' --progress-bar # --silent
       ;;
     "wget"*)
       eval '$DOWNLOAD_METHOD' '$URL' -O '$tmp_dir/outputFile' --show-progress --quiet
