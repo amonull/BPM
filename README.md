@@ -1,32 +1,56 @@
 # BPM
 so far this program is incomplete however any imporvments or suggestions is more than welcom.
 
-# Major/Breaking Version 0.1_alpha Changes
-Sqlite added as dependecy, BPM no longer looks for packages in `$HOME/.local/BPM/repo-list/` but instead reads it from `$HOME/.local/share/BPM/main-repo.db`.
+# Changelog
 
-The sqlite db holds all needed information about a package.
+> Changes in how bpm works
 
-The information is:
-- name of package
-- built exe files name
-- (optional i.e. only on non binaries) build instructions
-- (optional) update instructions
-- paths to uninstall (to remove manpages, libs, everything created by that package)
-- version of package
-- dependecies (both as BPM installable and pure name filed names -> BPM_dep, host_dep) a package can choose to populate both and with the use of flag `-b|--use-bpm-deps` instead of printing out needed dependecies, the dependecies in BPM_dep can be installed using BPM instead (Note: BPM will not have all deps by default so any dep found in host_dep but not in BPM_dep will still be printed first before installing anything so that the user has everything needed to install/build/use the said package)
-- licence for package
+There no longer is any need for sqlite or any other extra tools.
 
-Structure of db:
-- table named -> pkgs
-    - holds name of package, version of package, licence
-- table named -> deps
-    - holds BPM_dep (dependecies that can be built with bpm) host_dep (dependecies that needs to be installed by the user using their package manager)
-- table named -> instructions
-    - hold build, update instructions for a package, uninstall paths
+Packages are now installed onto the packages path (default `$HOME/.local/share/BPM/pkgs/`) but can be changed using the -p flag.
+
+Everything specified inside the template (located in `$HOME/.local/share/BPM/templates/` but can be changed using -r flag) is now installed onto the packages path and everything gets symbolically linked into the correct location.
+
+Every file that has been symbolically linked outside the packages path gets appeneded onto a file called \<pkgname\>_info_file and during uninstallation that file is followed to unlink everything and then to remove that packages path directory completly to remove everything
+
+> Important information
+
+This project is still ***NOT COMPLETE*** so some major functionality is still missing but is planned to be added.
+
+Since this project is still not complete the template style and the template for bpm is also still incomplete but is planned to be added soon, after the template for bpm is complete installing bpm using the [install.sh file](https://github.com/amonull/BPM/blob/main/install.sh) should be possible making installation extremely easy and giving tips on what to do to get everything started. After the bpm template is added this README file will also be fixed removing old and useless information.
+
+This project has seen a lot of changes since i have started it however this version of it will most likely be the last re-write of this since it has finally started to take direction in the place that i want it to go to. There will still most likely be major and breaking changes in the future but not a complete re-write and templates should also not see much changes in how they are created from here on out.
+
+# Dependecies:
+- posix shell (like dash or bash)
+- grep
+- awk
+- which
+- find
+- curl
+- git
+- install
+
+# Ignore Tags Below
+Tags below are useless now due to the new changes added, especially information about making templates. Information on how to make your own templates will soon be added.
 
 # Installation
-1. clone this repo into `$HOME/.local/share/`
-2. add `$HOME/.local/share/BPM/pkgs/` to path
+Version with sqlite
+```
+git clone https://github.com/amonull/BPM.git
+
+./BPM/src/bpm --template-path ./BPM/repo/Templates/BPM
+```
+
+Version without sqlite
+```
+git clone https://github.com/amonull/BPM.git
+
+./BPM/src/bpm --template-path ./BPM/repo/Templates/BPM-no-sqlite
+```
+
+
+After install add `$HOME/.local/share/BPM/pkgs/` to user path and add `$HOME/.local/share/man/` to manpath in `/etc/man.conf`
 
 > todo below (not yet implemented)
 
@@ -41,14 +65,6 @@ It updates itself by using git pull
 - correctly download the nececery licences on to specified dirs (most likely $HOME/.local/BPM/licences/\<pkg\>/\<licecence\>
 
 # IMPORTANT -> ALL INFO BELOW IS OUTDATED AND NEEDS TO BE UPDATED
-
-# Dependecies:
-- grep
-- which
-- posix shell (like dash)
-- curl
-- git (optional but some packages need for building itslef)
-- find
 
 # required paths
 for this program to work paths ```$HOME/.local/BPM/pkgs/ && $HOME/.local/BPM/repo-list/{official-repo,user-repo}``` must be created and to run packages downloaded ```$HOME/.local/BPM/pkgs/``` must be on path.

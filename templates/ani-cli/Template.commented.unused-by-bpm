@@ -13,6 +13,7 @@ Manpages="ani-cli.1"
 Completions=""
 Desktop="{TEMPLATE}/ani-cli.desktop"
 Checksum=""
+Files=""
 Uninstall_paths="$HOME/.local/share/BPM/pkgs/ani-cli $HOME/.local/share/BPM/man/man1/ani-cli.1 $HOME/.local/share/applications/ani-cli.desktop"
 
 # parameters explained
@@ -38,6 +39,8 @@ checksum format {checksum cmd i.e. SHA256, MD5, etc}checksum>name_to_check
 i.e.
 {SHA256}e4af0526b2eac38508761875658aee3a74afad328b1682680529f1046f11d99e>bpm
 checksum generated in 13 june 2023 (wont match anymore here for reference)
+
+files are represented as {TEMPLATE}/files/name-of-file>path/to/move/to. is a list seperated by spaces
 
 can be left empty (as parameter=""):
 bpm_deps
