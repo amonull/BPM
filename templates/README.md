@@ -1,5 +1,5 @@
 # Information Outdated
-Information here is outdated as of 21<sup>fst</sup> july. after template for bpm is completed this file will also be completed giving information on how to make your own templates.
+Information here is outdated as of 21<sup>st</sup> july. after template for bpm is completed this file will also be completed giving information on how to make your own templates.
 
 # Templates explained
 Templates have very simple structures sh strucure, it is variable and value. Most variables like dep, url, manpages, libs, uninstall_paths, etc.. are a string var but are treated as a list looping through each element. For example for the URL in ani-cli.template there are 2 URLs one for the executable and the other for the manpage, for this bpm loops through the URL var and installs both onto the same tmpdir and using that tmpdir as a relative path it builds and moves the files into their correct locations for example `ani-cli.1` in manpages var is the same as saying `/tmp/BPM.XXXXXXXXX/ani-cli.1` if `ani-cli.1` was on a dir called man manpages would need to have the value `man/ani-cli.1`.
