@@ -114,6 +114,8 @@ prepare_system () {
   not_installed_host_deps=""
   not_installed_bpm_deps=""
 
+  # XXX: consider using whereis instead of which
+
   for conflict in $pkg_conflicts; do
     which "$conflict" > /dev/null 2>&1 && found_conflicts="$found_conflicts $conflict"
   done
@@ -270,6 +272,7 @@ download_stage_3 () {
     end_path="$man_outdir/man$ends_with/"
     ln_path="$HOME/.local/share/man/man$ends_with/"
 
+    # XXX: consider if error checking install should be used like in below
     install -Dm644 "$manpage" "$end_path"
 
     manpage="$(echo "$manpage" | awk -F '/' '{print $NF}')" # done incase $manpage used full path for template
@@ -284,6 +287,7 @@ download_stage_3 () {
     completion_end_path="$completions_outdir/$(echo "$completion" | awk -F '/' '{print $NF}')"
     case $completion in
       *.fish)
+        # XXX: consider if error checking install should be used like in below
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/fish/generated_completions/"
         echo "$completion_end_path" "$HOME/.local/share/fish/generated_completions/" >> "$info_file_outdir"
@@ -303,20 +307,31 @@ download_stage_3 () {
 
   # [ DESKTOP ]
   desktop_end_path="$desktop_outdir/$(echo "$pkg_desktop" | awk -F '/' '{print $NF}')"
-  install -Dm644 "$pkg_desktop" "$desktop_end_path"
-  ln -s "$desktop_end_path" "$HOME/.local/share/applications/"
-  echo "$desktop_end_path $HOME/.local/share/applications/" >> "$info_file_outdir"
+  if install -Dm644 "$pkg_desktop" "$desktop_end_path" 2> /dev/null; then
+    ln -s "$desktop_end_path" "$HOME/.local/share/applications/"
+    echo "$desktop_end_path $HOME/.local/share/applications/" >> "$info_file_outdir"
+  fi
 
   # [ BIN ]
   if [ "$pkg_name" = "{NONE}" ]; then
-    echo "$pkg_name" >> "$bin_outdir/$pkg_name"
-    echo "${pkg_version}_${pkg_revision}" >> "$bin_outdir/$pkg_name"
-    echo "" >> "$bin_outdir/$pkg_name"
-    echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
+    pkg_name="$(echo "$path_to_package" | awk -F '/' '{print $NF}')"
+
+    { echo "$pkg_name" ; echo "${pkg_version}_${pkg_revision}" ; echo "" ; echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." ; } > "$bin_outdir/$pkg_name"
+
+    # XXX: alternative to above commented below incase above doesn't work
+
+    # echo "$pkg_name" >> "$bin_outdir/$pkg_name"
+    # echo "${pkg_version}_${pkg_revision}" >> "$bin_outdir/$pkg_name"
+    # echo "" >> "$bin_outdir/$pkg_name"
+    # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
-    install -Dm"$pkg_bin_premissions" "$pkg_name" "$bin_outdir/$pkg_name"
-    ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
-    echo "$bin_outdir/$pkg_name $HOME/.local/bin/" >> "$info_file_outdir"
+    if install -Dm"$pkg_bin_premissions" "$pkg_name" "$bin_outdir/$pkg_name"; then
+      ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
+      echo "$bin_outdir/$pkg_name $HOME/.local/bin/" >> "$info_file_outdir"
+    else
+      echo "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
+      cleanup
+    fi
   fi
 
   # [ FILES ]
@@ -331,9 +346,13 @@ download_stage_3 () {
     read -r -p "move file: $file_loc into $new_loc? [y/N]: " response
     case "$response" in
       [yY])
-        install -Dm"$file_premission" "$file_loc" "$local_loc"
-        ln -s "$local_loc" "$new_loc"
-        echo "$local_loc $new_loc" >> "$files_outdir"
+        if install -Dm"$file_premission" "$file_loc" "$local_loc"; then
+          ln -s "$local_loc" "$new_loc"
+          echo "$local_loc $new_loc" >> "$files_outdir"
+        else
+          echo "[WARNING]: File in: $file_loc does not exists"
+          echo "skipping $file_loc..."
+        fi
         ;;
       *)
         echo "skipping..."
@@ -354,6 +373,7 @@ download_stage_3 () {
 remove_pkg () {
   # TODO: following sym links from $info_file_outdir unlink all
   # sym links and then delete with rm -rf $outdir to remove everything
+  # DO NOT FORGET TO REMOVE DEPENDECIES
   outdir="$packages_path/$pkg_name"
   info_file_outdir="$outdir/${pkg_name}_files__info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
   paths_to_remove="$(tail -n +2 < "$info_file_outdir")"
