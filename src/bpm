@@ -10,7 +10,6 @@ readonly _version="v0.2_alpha"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/templates/" # templates stored here (flag -r changes this location)
-# readonly manpages_path="$HOME/.local/share/BPM/man/"
 
 # [ flags ]
 verbose=0
@@ -23,6 +22,53 @@ check_updates=0
 ignore_deps=0
 
 flag_pkgs=""
+
+
+#############################################
+################## GENERAL ##################
+#############################################
+
+usage () {
+  printf "
+  usage: bpm [option(s)] [package]
+
+  Options:
+    -d, --download
+      Download a package
+  "
+}
+
+cleanup () {
+  rm -rf "$tmp_dir"
+  exit 1
+}
+
+flush_vars () {
+  # core package variables
+  pkg_name=""
+  pkg_version=""
+  pkg_revision=""
+  pkg_URL="" 
+
+  # dependecies
+  pkg_bpm_deps=""
+  pkg_host_deps=""
+
+  # non-vital pack
+  pkg_conflicts=""
+  pkg_checksum=""
+  pkg_premissions=""
+  pkg_bin_premissions=""
+  pkg_file_premissions=""
+
+  # package file variables
+  pkg_manpages=""
+  pkg_completion=""
+  pkg_desktop=""
+  pkg_files=""
+  pkg_patches=""
+  pkg_build=""
+}
 
 
 #############################################
@@ -52,6 +98,8 @@ find_pkg () {
 
 source_template () {
   # sources a package variables
+  
+  flush_vars
   
   if [ ! -d "$path_to_package_template" ]; then
     echo "package not found"
@@ -130,43 +178,45 @@ prepare_system () {
     exit 1
   fi
 
-  for host_dep in $pkg_host_deps; do
-    which "$host_dep" > /dev/null 2>&1 || not_installed_host_deps="$not_installed_host_deps $host_dep"
-  done
-
-  for bpm_dep in $pkg_bpm_deps; do
-    which "$bpm_dep" > /dev/null 2>&1 || not_installed_bpm_deps="$not_installed_bpm_deps $bpm_dep"
-  done
-
-  if [ "$not_installed_host_deps" ]; then
-    echo "[ERR]: following dependecies needs to be installed with host package manager:"
-    echo ""
-    for dep in $not_installed_host_deps; do
-      echo "  $dep"
+  if [ ! "$ignore_deps" ]; then
+    for host_dep in $pkg_host_deps; do
+      which "$host_dep" > /dev/null 2>&1 || not_installed_host_deps="$not_installed_host_deps $host_dep"
     done
-    echo ""
-    [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
-  fi
 
-  if [ "$not_installed_bpm_deps" ]; then
-    echo "[INFO]: found required BPM dependecies: "
-    echo ""
-    for dep in $not_installed_bpm_deps; do
-      echo "  $dep"
+    for bpm_dep in $pkg_bpm_deps; do
+      which "$bpm_dep" > /dev/null 2>&1 || not_installed_bpm_deps="$not_installed_bpm_deps $bpm_dep"
     done
-    echo ""
-    read -r -p "install those dependecies? [y/N]: " response
-    case "$response" in
-      [yY])
-        for install_dep in $not_installed_bpm_deps; do
-          bpm -d "$install_dep" # assumes bpm is in path (self call)
-        done
-        ;;
-      *)
-        echo "[ERR]: dependecies are still required. Cannot install $pkg_name."
-        [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
-        ;;
-    esac
+
+    if [ "$not_installed_host_deps" ]; then
+      echo "[ERR]: following dependecies needs to be installed with host package manager:"
+      echo ""
+      for dep in $not_installed_host_deps; do
+        echo "  $dep"
+      done
+      echo ""
+      [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
+    fi
+
+    if [ "$not_installed_bpm_deps" ]; then
+      echo "[INFO]: found required BPM dependecies: "
+      echo ""
+      for dep in $not_installed_bpm_deps; do
+        echo "  $dep"
+      done
+      echo ""
+      read -r -p "install those dependecies? [y/N]: " response
+      case "$response" in
+        [yY])
+          for install_dep in $not_installed_bpm_deps; do
+            bpm -d "$install_dep" # assumes bpm is in path (self call)
+          done
+          ;;
+        *)
+          echo "[ERR]: dependecies are still required. Cannot install $pkg_name."
+          [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
+          ;;
+      esac
+    fi
   fi
 }
 
@@ -419,6 +469,7 @@ update_checker () {
     current_version="$(head -n 1 < "$info_file_outdir")"
 
     find_pkg "$current_package"
+    source_template
     
     if [ ! "$current_version" = "${pkg_version}_${pkg_revision}" ]; then
       needs_update="$needs_update $current_package"
@@ -445,6 +496,7 @@ update_pkg () {
   current_version="$(head -n 1 < "$info_file_outdir")"
 
   find_pkg "$flag_pkgs"
+  source_template
 
   if [ "$current_version" = "${pkg_version}_${pkg_revision}" ]; then
     echo "[INFO]: $flag_pkgs already on newest version on template"
@@ -470,6 +522,7 @@ full_update () {
     current_version="$(head -n 1 < "$info_file_outdir")"
 
     find_pkg "$current_package"
+    source_template
     
     if [ ! "$current_version" = "${pkg_version}_${pkg_revision}" ]; then
       needs_update="$needs_update $current_package"
@@ -482,26 +535,6 @@ full_update () {
     update_pkg
   done
 }
-
-#############################################
-################## GENERAL ##################
-#############################################
-
-cleanup () {
-  rm -rf "$tmp_dir"
-  exit 1
-}
-
-usage () {
-  printf "
-  usage: bpm [option(s)] [package]
-
-  Options:
-    -d, --download
-      Download a package
-  "
-}
-
 
 #############################################
 ################ START POINT ################
@@ -575,5 +608,52 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# TODO: uncomment below when finished
-# exit 0
+if [ "$download" ]; then
+  for package in $flag_pkgs; do
+    find_pkg "$flag_pkgs"
+    source_template
+    prepare_system
+
+    download_stage_1
+    download_stage_2
+    download_stage_3
+  done
+
+  exit 0
+fi
+
+if [ "$remove" ]; then
+  for package in $flag_pkgs; do
+    find_pkg "$package"
+    remove_pkg
+  done
+
+  exit 0
+fi
+
+if [ "$search" ]; then
+  find "$repos_path" -iname "$flag_pkgs"
+
+  exit 0
+fi
+
+if [ "$update" ]; then
+  full_update
+
+  exit 0
+fi
+
+if [ "$update_pkg" ]; then
+  update_pkg
+
+  exit 0
+fi
+
+if [ "$check_updates" ]; then
+  update_checker
+
+  exit 0
+fi
+
+usage
+exit 1
