@@ -31,6 +31,10 @@ This project has seen a lot of changes since i have started it however this vers
 - git
 - install
 
+# Security Risks
+
+BPM too permissive in version, build and patches
+
 # Ignore Tags Below
 Tags below are useless now due to the new changes added, especially information about making templates. Information on how to make your own templates will soon be added.
 

@@ -59,6 +59,8 @@ source_template () {
     exit 1
   fi
 
+  # TODO: remove tr -d '"' with something else (especially in version) to not mess with {AUTO:*}
+
   # core package variables
   pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Name parameter not found"; exit 1))"
   pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Version parameter not found"; exit 1))"
@@ -258,6 +260,9 @@ download_stage_3 () {
   bin_outdir="$outdir/bin"
   info_file_outdir="$outdir/${pkg_name}_files__info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
   mkdir -p "$outdir" "$man_outdir" "$completions_outdir" "$desktop_outdir" "$files_outdir" "$bin_outdir"
+  touch "$info_file_outdir"
+
+  echo "${pkg_version}_${pkg_revision}" >> "$info_file_outdir"
 
   # [ MANPAGES ]
   for manpage in $pkg_manpages; do
@@ -302,6 +307,18 @@ download_stage_3 () {
   ln -s "$desktop_end_path" "$HOME/.local/share/applications/"
   echo "$desktop_end_path $HOME/.local/share/applications/" >> "$info_file_outdir"
 
+  # [ BIN ]
+  if [ "$pkg_name" = "{NONE}" ]; then
+    echo "$pkg_name" >> "$bin_outdir/$pkg_name"
+    echo "${pkg_version}_${pkg_revision}" >> "$bin_outdir/$pkg_name"
+    echo "" >> "$bin_outdir/$pkg_name"
+    echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
+  else
+    install -Dm"$pkg_bin_premissions" "$pkg_name" "$bin_outdir/$pkg_name"
+    ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
+    echo "$bin_outdir/$pkg_name $HOME/.local/bin/" >> "$info_file_outdir"
+  fi
+
   # [ FILES ]
   for file in $pkg_files; do
     file_loc="./$(echo "$file" | awk -F '>' '{ print $1 }' )"
@@ -324,11 +341,6 @@ download_stage_3 () {
     esac
   done
 
-  # [ BIN ]
-  install -Dm"$pkg_bin_premissions" "$pkg_name" "$bin_outdir/$pkg_name"
-  ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
-  echo "$bin_outdir/$pkg_name $HOME/.local/bin/" >> "$info_file_outdir"
-
   # [ END ]
   cd "$starting_path" || (echo "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
   rm -rf "$tmp_dir"
@@ -342,6 +354,10 @@ download_stage_3 () {
 remove_pkg () {
   # TODO: following sym links from $info_file_outdir unlink all
   # sym links and then delete with rm -rf $outdir to remove everything
+  outdir="$packages_path/$pkg_name"
+  info_file_outdir="$outdir/${pkg_name}_files__info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
+  paths_to_remove="$(tail -n +2 < "$info_file_outdir")"
+
   echo "TODO"
 }
 
@@ -349,6 +365,8 @@ remove_pkg () {
 #############################################
 ################# UPDATING ##################
 #############################################
+
+# TODO: for updating compare pkg_version and pkg_revision in info_file_outdir (located at first line)
 
 full_update () {
   echo "TODO"
