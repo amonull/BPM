@@ -3,6 +3,8 @@ so far this program is incomplete however any improvements or suggestions is mor
 
 [Information on templates and how to make them](https://github.com/amonull/BPM/tree/main/templates)
 
+For BPM to install any packages or to update them bpm must be on path as it makes calls to itself frequently for some functionality.
+
 # Changelog
 
 > Changes in how bpm works
@@ -41,7 +43,7 @@ BPM too permissive in version, build and patches
 
 - [] finish flag usage
 - [x] create the remove functionality
-- [] create updating functionality
+- [x] create updating functionality
 - [] create searching functionality
 - [] add colors to \[ERR\] \[INFO\] \[WARNING\] by using printf
 - [] make bpm deps downloaded and removed by bpm
