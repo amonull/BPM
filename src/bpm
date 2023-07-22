@@ -4,8 +4,7 @@
 
 [ "$(id -u)" -eq 0 ] && (echo "bpm must be run as regular user (non-root)"; exit 1)
 
-readonly starting_path
-starting_path="$(pwd)" # since path is changed (to a tmp dir in download_stage_1) it is not known if this will be required in future processes or not
+readonly starting_path="$(pwd)" # since path is changed (to a tmp dir in download_stage_1) it is not known if this will be required in future processes or not
 
 readonly _version="v0.2_alpha"
 
@@ -143,7 +142,7 @@ prepare_system () {
     echo "[ERR]: following dependecies needs to be installed with host package manager:"
     echo ""
     for dep in $not_installed_host_deps; do
-      echo "$dep"
+      echo "  $dep"
     done
     echo ""
     [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
@@ -153,7 +152,7 @@ prepare_system () {
     echo "[INFO]: found required BPM dependecies: "
     echo ""
     for dep in $not_installed_bpm_deps; do
-      echo "$dep"
+      echo "  $dep"
     done
     echo ""
     read -r -p "install those dependecies? [y/N]: " response
@@ -279,7 +278,7 @@ download_stage_3 () {
 
     ln -s "$end_path/$manpage" "$ln_path"
 
-    echo "$end_path $ln_path" >> "$info_file_outdir"
+    echo "$end_path $ln_path/$manpage" >> "$info_file_outdir"
   done
 
   # [ COMPLETION ]
@@ -290,12 +289,12 @@ download_stage_3 () {
         # XXX: consider if error checking install should be used like in below
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/fish/generated_completions/"
-        echo "$completion_end_path" "$HOME/.local/share/fish/generated_completions/" >> "$info_file_outdir"
+        echo "$completion_end_path" "$HOME/.local/share/fish/generated_completions/$(echo "$completion_end_path" | awk -F '/' '{print $NF}')" >> "$info_file_outdir"
         ;;
       *.bash)
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/bash-completion/completions/"
-        echo "$completion_end_path" "$HOME/.local/share/bash-completion/completions/" >> "$info_file_outdir"
+        echo "$completion_end_path" "$HOME/.local/share/bash-completion/completions/$(echo "$completion_end_path" | awk -F '/' '{print $NF}')" >> "$info_file_outdir"
         ;;
       *.zsh)
         echo TODO
@@ -309,7 +308,7 @@ download_stage_3 () {
   desktop_end_path="$desktop_outdir/$(echo "$pkg_desktop" | awk -F '/' '{print $NF}')"
   if install -Dm644 "$pkg_desktop" "$desktop_end_path" 2> /dev/null; then
     ln -s "$desktop_end_path" "$HOME/.local/share/applications/"
-    echo "$desktop_end_path $HOME/.local/share/applications/" >> "$info_file_outdir"
+    echo "$desktop_end_path $HOME/.local/share/applications/$(echo "$desktop_end_path" | awk -F '/' '{print $NF}')" >> "$info_file_outdir"
   fi
 
   # [ BIN ]
@@ -327,7 +326,7 @@ download_stage_3 () {
   else
     if install -Dm"$pkg_bin_premissions" "$pkg_name" "$bin_outdir/$pkg_name"; then
       ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
-      echo "$bin_outdir/$pkg_name $HOME/.local/bin/" >> "$info_file_outdir"
+      echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
     else
       echo "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
       cleanup
@@ -360,7 +359,6 @@ download_stage_3 () {
     esac
   done
 
-  # [ END ]
   cd "$starting_path" || (echo "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
   rm -rf "$tmp_dir"
 }
@@ -373,12 +371,41 @@ download_stage_3 () {
 remove_pkg () {
   # TODO: following sym links from $info_file_outdir unlink all
   # sym links and then delete with rm -rf $outdir to remove everything
-  # DO NOT FORGET TO REMOVE DEPENDECIES
+  # DO NOT FORGET TO REMOVE DEPENDECIES (just like in download before calling this func first source its template (if it exists if it doesnt warn user but continue) after sourcing it start removing deps or warn user those deps exist and should be removed)
+
   outdir="$packages_path/$pkg_name"
   info_file_outdir="$outdir/${pkg_name}_files__info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
   paths_to_remove="$(tail -n +2 < "$info_file_outdir")"
 
-  echo "TODO"
+  # [ removing deps ]
+  if [ "$pkg_bpm_deps" ]; then
+    echo "[INFO]: Found installed BPM deps: "
+    for bpm_dep in $pkg_bpm_deps; do
+      read -r -p "Remove $bpm_dep? [y/N]: " respone
+      case "$respone" in
+        [yY])
+          bpm -R "$bpm_dep"
+          ;;
+        *)
+          echo "[INFO]: not removing $bpm_dep"
+          ;;
+      esac
+    done
+  fi
+
+  if [ "$pkg_host_deps" ]; then
+    echo "[INFO]: Found installed host deps: "
+    for host_dep in $pkg_host_deps; do
+      echo "  $host_dep"
+    done
+  fi
+  
+  # [ removing symlinks and installed files ]
+  for path in $paths_to_remove; do
+    unlink "$(echo "$path" | awk '{print $2}')" || (echo "[WARNING]: cannot unlink: $(echo "$path" | awk '{print $2}')"; echo "skipping...")
+  done
+
+  rm -rf "$outdir"
 }
 
 
@@ -387,6 +414,10 @@ remove_pkg () {
 #############################################
 
 # TODO: for updating compare pkg_version and pkg_revision in info_file_outdir (located at first line)
+
+update_checker () {
+  echo "TODO"
+}
 
 full_update () {
   echo "TODO"
@@ -412,7 +443,13 @@ cleanup () {
 }
 
 usage () {
-  echo "TODO"
+  printf "
+  usage: bpm [option(s)] [package]
+
+  Options:
+    -d, --download
+      Download a package
+  "
 }
 
 
@@ -421,8 +458,6 @@ usage () {
 #############################################
 
 [ $# -lt 1 ] && (echo "not enough parameters supplied"; usage) && exit 1
-
-init_bpm
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -460,13 +495,13 @@ while [ $# -gt 0 ]; do
       ignore_deps=1
       ;;
     -r | --repo)
-      shift
       repos_path="$1"
+      shift
       flag_pkgs="$*"
       ;;
     -p | --path)
-      shift
       packages_path="$1"
+      shift
       flag_pkgs="$*"
       ;;
     -V | --verbose)
@@ -489,6 +524,10 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+
+init_bpm
+
 
 # TODO: uncomment below when finished
 # exit 0

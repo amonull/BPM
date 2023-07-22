@@ -36,3 +36,14 @@ This project has seen a lot of changes since i have started it however this vers
 # Security Risks
 
 BPM too permissive in version, build and patches
+
+# TODO
+
+- [] finish flag usage
+- [x] create the remove functionality
+- [] create updating functionality
+- [] create searching functionality
+- [] add colors to \[ERR\] \[INFO\] \[WARNING\] by using printf
+- [] make bpm deps downloaded and removed by bpm
+- [] Add a new ui with fzf that allows users to for packages in said paths.
+- [] After new ui is added create a .desktop file to be able to run it as a dekstop application.
