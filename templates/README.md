@@ -90,6 +90,8 @@ A template must be at the root of a the template dir i.e. `Templates/BPM/Templat
 
 All parameters inside a Template must have capital first letters. Name and name are not the same parameter and will not be treated as such.
 
+The parameters `Name`, `Version`, `Revision`, and `URL` must exist in the template for an installation to happen, the rest of the parameters are not required.
+
 > Accepted parameters
 
 1. Name
@@ -178,7 +180,26 @@ Files parameter can use `{BIN}` to copy and move the binary file somewhere else 
 
 #### Template For Template
 
-TODO
+```
+Name=""
+Version=""
+Revision=""
+URL=""
+
+BPM_deps=""
+Host_deps=""
+
+Conflicts=""
+Checksum=""
+Permissions=""
+
+Manpages=""
+Completions=""
+Desktop=""
+Files=""
+```
+
+The newlines between the parameters are irrelevent and are there for readability however there should be no spaces between the parameter name, the equal sign and the quotes also useless spaces should be avoided inside the parameter values to avoid unexpected behaviour.
 
 # What Paths Are Used
 
