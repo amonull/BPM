@@ -10,6 +10,7 @@ readonly _version="v0.2_alpha"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/templates/" # templates stored here (flag -r changes this location)
+tmp_dir="$(mktemp -d -t BPM.XXXXXXXXXX)/"
 
 # [ flags ]
 verbose=0
@@ -41,6 +42,11 @@ usage () {
 cleanup () {
   rm -rf "$tmp_dir"
   exit 1
+}
+
+cleanup_success () {
+  rm -rf "$tmp_dir"
+  exit 0
 }
 
 flush_vars () {
@@ -89,7 +95,7 @@ find_pkg () {
     find "$repos_path" -iname "$**" -exec echo {} \;
     echo ""
     echo "be more specific"
-    exit 1
+    cleanup
   fi
 
   path_to_package="$(find "$repos_path" -iname "$**" 2> /dev/null)"
@@ -103,16 +109,16 @@ source_template () {
   
   if [ ! -d "$path_to_package_template" ]; then
     echo "package not found"
-    exit 1
+    cleanup
   fi
 
   # TODO: remove tr -d '"' with something else (especially in version) to not mess with {AUTO:*}
 
   # core package variables
-  pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Name parameter not found"; exit 1))"
-  pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Version parameter not found"; exit 1))"
-  pkg_revision="$(grep "Revision" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Revision parameter not found"; exit 1))"
-  pkg_URL="$(grep "URL" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "URL not found"; exit 1))"
+  pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Name parameter not found"; cleanup))"
+  pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Version parameter not found"; cleanup))"
+  pkg_revision="$(grep "Revision" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Revision parameter not found"; cleanup))"
+  pkg_URL="$(grep "URL" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "URL not found"; cleanup))"
 
   # dependecies
   pkg_bpm_deps="$(grep "BPM_deps" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
@@ -135,15 +141,15 @@ source_template () {
 
   # fixing variables
   if echo "$pkg_manpages" | grep -qx "Manpages=\"{TEMPLATE}.*\""; then
-    pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$FILE_PATH|g")"
+    pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   if echo "$pkg_completion" | grep -qx "Completion=\"{TEMPLATE}.*\""; then
-    pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$FILE_PATH|g")"
+    pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   if echo "$pkg_desktop" | grep -qx "Desktop=\"{TEMPLATE}.*\""; then
-    pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$FILE_PATH|g")"
+    pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   for premission in $pkg_premissions; do
@@ -175,7 +181,7 @@ prepare_system () {
     done
     echo ""
     echo "exiting..."
-    exit 1
+    cleanup
   fi
 
   if [ ! "$ignore_deps" ]; then
@@ -194,7 +200,8 @@ prepare_system () {
         echo "  $dep"
       done
       echo ""
-      [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
+      echo "exiting..."
+      cleanup
     fi
 
     if [ "$not_installed_bpm_deps" ]; then
@@ -213,7 +220,8 @@ prepare_system () {
           ;;
         *)
           echo "[ERR]: dependecies are still required. Cannot install $pkg_name."
-          [ ! "$ignore_deps" ] && (echo "exiting..."; exit 1)
+          echo "exiting..."
+          cleanup
           ;;
       esac
     fi
@@ -228,10 +236,8 @@ prepare_system () {
 download_stage_1 () {
   # gets all files from pkg_URL and puts into /tmp/BPM.XXXXXX/
   
-  tmp_dir="$(mktemp -d -t BPM.XXXXXXXXXX)/"
-
   # XXX: PATH CHANGED HERE
-  cd tmp_dir || (echo "[ERR]: cannot cd into created tmp dir: $tmp_dir"; exit 1)
+  cd tmp_dir || (echo "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
 
   for url in $pkg_URL; do
     if echo "$url" | grep -q '\.git$' ; then
@@ -289,7 +295,7 @@ download_stage_2 () {
     file_name="$(echo "$checksum" | awk -F '>' '{ print $2 }')"
     checksum_method="$(echo "$checksum" | awk -F '>' '{ print $1 }' | tr -d '{')"
     expected_checksum_result="$(echo "$checksum" | awk -F '>' '{ print $2 }')"
-    actual_checksum_result=$($checksum_method "$file_name" || (echo "[ERR]: error in making checksum file: $file_name"; exit 1))
+    actual_checksum_result=$($checksum_method "$file_name" || (echo "[ERR]: error in making checksum file: $file_name"; cleanup))
 
     if [ ! "$expected_checksum_result" = "$actual_checksum_result" ]; then
       echo "[ERR]: checksums in file: $file_name do not match"
@@ -374,7 +380,7 @@ download_stage_3 () {
     # echo "" >> "$bin_outdir/$pkg_name"
     # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
-    if install -Dm"$pkg_bin_premissions" "$pkg_name" "$bin_outdir/$pkg_name"; then
+    if install -Dm"$pkg_bin_premissions" "$tmp_dir/$pkg_name" "$bin_outdir/$pkg_name"; then
       ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
       echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
     else
@@ -385,17 +391,22 @@ download_stage_3 () {
 
   # [ FILES ]
   for file in $pkg_files; do
-    file_loc="./$(echo "$file" | awk -F '>' '{ print $1 }' )"
+    
+    if [ "$(echo "$file" | awk -F '>' '{ print $1 }' )" = "{BIN}" ]; then
+      file_loc="$pkg_name"
+    else
+      file_loc="$(echo "$file" | awk -F '>' '{ print $1 }' )"
+    fi
     new_loc="$(echo "$file" | awk -F '>' '{ print $2 }' )"
     local_loc="$files_outdir/$(echo "$new_loc" | awk -F '/' '{print $NF}')"
     file_name="$(echo "$file_loc" | awk -F '/' '{print $NF}')"
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"]
 
-    read -r -p "move file: $file_loc into $new_loc? [y/N]: " response
+    read -r -p "move file: $tmp_dir/$file_loc into $new_loc? [y/N]: " response
     case "$response" in
       [yY])
-        if install -Dm"$file_premission" "$file_loc" "$local_loc"; then
+        if install -Dm"$file_premission" "$tmp_dir/$file_loc" "$local_loc"; then
           ln -s "$local_loc" "$new_loc"
           echo "$local_loc $new_loc" >> "$files_outdir"
         else
@@ -500,7 +511,7 @@ update_pkg () {
 
   if [ "$current_version" = "${pkg_version}_${pkg_revision}" ]; then
     echo "[INFO]: $flag_pkgs already on newest version on template"
-    exit 0
+    cleanup_success
   fi
 
   remove_pkg
@@ -540,7 +551,7 @@ full_update () {
 ################ START POINT ################
 #############################################
 
-[ $# -lt 1 ] && (echo "not enough parameters supplied"; usage) && exit 1
+[ $# -lt 1 ] && (echo "not enough parameters supplied"; usage) && cleanup
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -593,16 +604,16 @@ while [ $# -gt 0 ]; do
       ;;
     -v | --version)
       echo $_version
-      exit 0
+      cleanup_success
       ;;
     -h | --help)
       usage
-      exit 0
+      cleanup_success
       ;;
     *)
       echo ""
       usage
-      exit 1
+      cleanup
       ;;
   esac
   shift
@@ -619,7 +630,7 @@ if [ "$download" ]; then
     download_stage_3
   done
 
-  exit 0
+  cleanup_success
 fi
 
 if [ "$remove" ]; then
@@ -628,32 +639,32 @@ if [ "$remove" ]; then
     remove_pkg
   done
 
-  exit 0
+  cleanup_success
 fi
 
 if [ "$search" ]; then
   find "$repos_path" -iname "$flag_pkgs"
 
-  exit 0
+  cleanup_success
 fi
 
 if [ "$update" ]; then
   full_update
 
-  exit 0
+  cleanup_success
 fi
 
 if [ "$update_pkg" ]; then
   update_pkg
 
-  exit 0
+  cleanup_success
 fi
 
 if [ "$check_updates" ]; then
   update_checker
 
-  exit 0
+  cleanup_success
 fi
 
 usage
-exit 1
+cleanup

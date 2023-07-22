@@ -4,7 +4,7 @@ Revision="1"
 URL="https://github.com/amonull/BPM.git"
 
 BPM_deps=""
-Host_deps="sh git curl grep awk which"
+Host_deps="sh git curl grep awk which find install"
 
 Conflicts="bpm-allow-root"
 Checksum=""
@@ -12,5 +12,5 @@ Premissions="{BIN}>744"
 
 Manpages=""
 Completions=""
-Desktop="{TEMPLATE}/ani-cli.desktop"
+Desktop=""
 Files=""
