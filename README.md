@@ -1,5 +1,5 @@
 # BPM
-so far this program is incomplete however any imporvments or suggestions is more than welcom.
+so far this program is incomplete however any improvements or suggestions is more than welcom.
 
 [Information on templates and how to make them](https://github.com/amonull/BPM/tree/main/templates)
 
