@@ -139,16 +139,19 @@ source_template () {
   pkg_patches="$path_to_package/patches/"
   pkg_build="$path_to_package/build.sh"
 
-  # fixing variables
+  # in second script | is used instead of / since using / used to give errors but in first | gives errors
   if echo "$pkg_manpages" | grep -qx "Manpages=\"{TEMPLATE}.*\""; then
+    pkg_manpages="$(echo "$pkg_manpages" | sed "/{TEMPLATE}/!s/^/$tmp_dir/g")" # i hate regex
     pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   if echo "$pkg_completion" | grep -qx "Completion=\"{TEMPLATE}.*\""; then
+    pkg_completion="$(echo "$pkg_completion" | sed "/{TEMPLATE}/!s/^/$tmp_dir/g")"
     pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   if echo "$pkg_desktop" | grep -qx "Desktop=\"{TEMPLATE}.*\""; then
+    pkg_desktop="$(echo "$pkg_desktop" | sed sed "/{TEMPLATE}/!s/^/$tmp_dir/g")"
     pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
@@ -253,7 +256,7 @@ download_stage_2 () {
   # builds pkgs in /tmp/BPM.XXXXXX/
   
   # [ PATCHING ]
-  for path in "$pkg_patches/"*; do
+  for path in "$pkg_patches"*; do
     if [ ! -f "$path" ]; then
       echo "[WARNING]: patch: $path is not a file. skipping..."
       continue
