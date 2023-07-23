@@ -152,7 +152,7 @@ source_template () {
   fi
 
   for premission in $pkg_premissions; do
-    if echo "$premission" | grep -qx "\{BIN\}>[0-7][0-7][0-7]"; then
+    if echo "$premission" | grep -qx "\{BIN\}>[0-7][0-7][0-7]" > /dev/null 2>&1; then # > /dev/null is needed to avoid stray \ in grep but that stray \ avoids errors
       pkg_bin_premissions="$(echo "$premission" | awk -F '>' '{print $2}')"
     else
       pkg_file_premissions="$pkg_file_premissions $premission"

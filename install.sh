@@ -13,8 +13,10 @@ fi
 
 ./src/bpm -r "$(dirname "$(realpath "$0")")/templates" -d bpm
 
-which bpm > /dev/null 2>&1 && echo "BPM is on path at $(which bpm)" || echo "BPM is not on path. Check if $HOME/.local/bin/ is on user path"
+which bpm > /dev/null 2>&1 && (echo ""; echo "BPM is on path at $(which bpm)") || (echo ""; echo "BPM is not on path. Check if $HOME/.local/bin/ is on user path")
 
+echo ""
+echo ""
 echo "For manpages to be used make sure $HOME/.local/share/man is on /etc/man.conf"
 echo "OR"
 echo "run echo $HOME/.local/share/man > /etc/man.conf (as root)"
