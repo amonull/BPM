@@ -312,7 +312,7 @@ download_stage_2 () {
 }
 
 download_stage_3 () {
-  outdir="$packages_path/$(basename "$path_to_package")"
+  outdir="${packages_path}$(basename "$path_to_package")"
   man_outdir="$outdir/man"
   completions_outdir="$outdir/completions"
   desktop_outdir="$outdir/dekstop"
@@ -384,8 +384,8 @@ download_stage_3 () {
     # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
     if install -Dm"$pkg_bin_premissions" "$tmp_dir$pkg_name" "$bin_outdir/$pkg_name"; then
-      ln -s "$bin_outdir$pkg_name" "$HOME/.local/bin/"
-      echo "$bin_outdir$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
+      ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
+      echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
     else
       echo "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
       cleanup
