@@ -1,0 +1,3 @@
+5,6d4
+< [ "$(id -u)" -eq 0 ] && (echo "bpm must be run as regular user (non-root)"; exit 1)
+< 

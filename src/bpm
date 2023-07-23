@@ -109,29 +109,30 @@ source_template () {
   fi
 
   # TODO: remove tr -d '"' with something else (especially in version) to not mess with {AUTO:*}
+  # consider usign ... | tail -c +2 | head -c -2 to remove first and last chars in string
 
   # core package variables
-  pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Name parameter not found"; cleanup))"
-  pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Version parameter not found"; cleanup))"
-  pkg_revision="$(grep "Revision" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "Revision parameter not found"; cleanup))"
-  pkg_URL="$(grep "URL" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"' || (echo "URL not found"; cleanup))"
+  pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "Name parameter not found"; cleanup))"
+  pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "Version parameter not found"; cleanup))"
+  pkg_revision="$(grep "Revision" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "Revision parameter not found"; cleanup))"
+  pkg_URL="$(grep "URL" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "URL not found"; cleanup))"
 
   # dependecies
-  pkg_bpm_deps="$(grep "BPM_deps" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
-  pkg_host_deps="$(grep "Host_deps" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
+  pkg_bpm_deps="$(grep "BPM_deps" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
+  pkg_host_deps="$(grep "Host_deps" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
 
   # non-vital package variables
-  pkg_conflicts="$(grep "Conflicts" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
-  pkg_checksum=$(grep "Checksum" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')
-  pkg_premissions=$(grep "Premissions" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')
+  pkg_conflicts="$(grep "Conflicts" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
+  pkg_checksum=$(grep "Checksum" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)
+  pkg_premissions=$(grep "Premissions" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)
   pkg_bin_premissions="644" # rw.r..r.. premissions by default
   pkg_file_premissions=""
 
   # package file variables
-  pkg_manpages="$(grep "Manpages" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
-  pkg_completion="$(grep "Completion" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
-  pkg_desktop="$(grep "Desktop" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')"
-  pkg_files=$(grep "Files" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tr -d '"')
+  pkg_manpages="$(grep "Manpages" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
+  pkg_completion="$(grep "Completion" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
+  pkg_desktop="$(grep "Desktop" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
+  pkg_files=$(grep "Files" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)
   pkg_patches="$path_to_package/patches/"
   pkg_build="$path_to_package/build.sh"
 
