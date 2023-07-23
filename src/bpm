@@ -82,13 +82,9 @@ flush_vars () {
 #############################################
 
 find_pkg () {
-  readonly AMOUNT_FOUND
-  readonly path_to_package
-  readonly path_to_package_template
+  readonly AMOUNT_FOUND="$(find "$repos_path" -iname "$*" 2> /dev/null | wc -l)"
 
-  AMOUNT_FOUND="$(find "$repos_path" -iname "$**" 2> /dev/null | wc -l)"
-
-  if [ "$AMOUNT_FOUND" -gt 1 ] && [ ! "$search" ]; then
+  if [ "$AMOUNT_FOUND" -gt "1" ]; then
     echo "[WARNING]: found more than 1 package"
     echo "the packages found are:"
     echo ""
@@ -98,8 +94,8 @@ find_pkg () {
     cleanup
   fi
 
-  path_to_package="$(find "$repos_path" -iname "$**" 2> /dev/null)"
-  path_to_package_template="$path_to_package/Template"
+  readonly path_to_package="$(find "$repos_path" -iname "$*" 2> /dev/null)"
+  readonly path_to_package_template="$path_to_package/Template"
 }
 
 source_template () {
@@ -107,8 +103,8 @@ source_template () {
   
   flush_vars
   
-  if [ ! -d "$path_to_package_template" ]; then
-    echo "package not found"
+  if [ ! -f "$path_to_package_template" ]; then
+    echo "[ERR]: package not found"
     cleanup
   fi
 
@@ -240,7 +236,7 @@ download_stage_1 () {
   # gets all files from pkg_URL and puts into /tmp/BPM.XXXXXX/
   
   # XXX: PATH CHANGED HERE
-  cd tmp_dir || (echo "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
+  cd "$tmp_dir" || (echo "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
 
   for url in $pkg_URL; do
     if echo "$url" | grep -q '\.git$' ; then
@@ -256,42 +252,46 @@ download_stage_2 () {
   # builds pkgs in /tmp/BPM.XXXXXX/
   
   # [ PATCHING ]
-  for path in "$pkg_patches"*; do
-    if [ ! -f "$path" ]; then
-      echo "[WARNING]: patch: $path is not a file. skipping..."
-      continue
-    fi
+  if [ -d "$pkg_patches" ]; then
+    for path in "$pkg_patches"*; do
+      if [ ! -f "$path" ]; then
+        echo "[WARNING]: patch: $path is not a file. skipping..."
+        continue
+      fi
 
-    file_to_patch="$(echo "$path" | awk -F '.' '{ print $1 }' )"
+      file_to_patch="$(echo "$path" | awk -F '.' '{ print $1 }' )"
 
-    patch -u "$file_to_patch" --input="$path" > /dev/null 2>&1 || (echo "[ERR]: couldn't apply patch: $path to $file_to_patch. exiting..."; cleanup)
-  done
+      patch -u "$file_to_patch" --input="$path" > /dev/null 2>&1 || (echo "[ERR]: couldn't apply patch: $path to $file_to_patch. exiting..."; cleanup)
+    done
+  fi
 
   # [ BUILDING ]
-  echo ""
-  cat "$pkg_build"
-  echo ""
+  if [ -f "$pkg_build" ]; then
+    echo ""
+    cat "$pkg_build"
+    echo ""
 
-  read -r -p "Run build script above? [y/N]: " response
-  case "$response" in
-    [yY])
-      echo "running $pkg_build inside $tmp_dir"
-      sh "$pkg_build"
-      ;;
-    *)
-      read -r -p "Not running build script. Exit [Y/n]: " response2
-      case "$response2" in
-        [nN])
-          echo "[INFO]: $pkg_build didn't run. skipping checksums to avoid errors..."
-          return
-          ;;
-        *)
-          echo "exiting..."
-          cleanup
-          ;;
-      esac
-      ;;
-  esac
+    read -r -p "Run build script above? [y/N]: " response
+    case "$response" in
+      [yY])
+        echo "running $pkg_build inside $tmp_dir"
+        sh "$pkg_build"
+        ;;
+      *)
+        read -r -p "Not running build script. Exit [Y/n]: " response2
+        case "$response2" in
+          [nN])
+            echo "[INFO]: $pkg_build didn't run. skipping checksums to avoid errors..."
+            return
+            ;;
+          *)
+            echo "exiting..."
+            cleanup
+            ;;
+        esac
+        ;;
+    esac
+  fi
 
   # [ CHECKSUM ]
   for checksum in $pkg_checksum; do
@@ -312,13 +312,13 @@ download_stage_2 () {
 }
 
 download_stage_3 () {
-  outdir="$packages_path/$(echo "$path_to_package" | awk -F '/' '{print $NF}')"
+  outdir="$packages_path/$(basename "$path_to_package")"
   man_outdir="$outdir/man"
   completions_outdir="$outdir/completions"
   desktop_outdir="$outdir/dekstop"
   files_outdir="$outdir/files"
   bin_outdir="$outdir/bin"
-  info_file_outdir="$outdir/$(echo "$path_to_package" | awk -F '/' '{print $NF}')_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
+  info_file_outdir="$outdir/$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
   mkdir -p "$outdir" "$man_outdir" "$completions_outdir" "$desktop_outdir" "$files_outdir" "$bin_outdir"
   touch "$info_file_outdir"
 
@@ -342,18 +342,18 @@ download_stage_3 () {
 
   # [ COMPLETION ]
   for completion in $pkg_completion; do
-    completion_end_path="$completions_outdir/$(echo "$completion" | awk -F '/' '{print $NF}')"
+    completion_end_path="$completions_outdir/$(basename "$completion")"
     case $completion in
       *.fish)
         # XXX: consider if error checking install should be used like in below
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/fish/generated_completions/"
-        echo "$completion_end_path" "$HOME/.local/share/fish/generated_completions/$(echo "$completion_end_path" | awk -F '/' '{print $NF}')" >> "$info_file_outdir"
+        echo "$completion_end_path" "$HOME/.local/share/fish/generated_completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.bash)
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/bash-completion/completions/"
-        echo "$completion_end_path" "$HOME/.local/share/bash-completion/completions/$(echo "$completion_end_path" | awk -F '/' '{print $NF}')" >> "$info_file_outdir"
+        echo "$completion_end_path" "$HOME/.local/share/bash-completion/completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.zsh)
         echo TODO
@@ -364,15 +364,15 @@ download_stage_3 () {
   done
 
   # [ DESKTOP ]
-  desktop_end_path="$desktop_outdir/$(echo "$pkg_desktop" | awk -F '/' '{print $NF}')"
+  desktop_end_path="$desktop_outdir/$(basename "$pkg_desktop")"
   if install -Dm644 "$pkg_desktop" "$desktop_end_path" 2> /dev/null; then
     ln -s "$desktop_end_path" "$HOME/.local/share/applications/"
-    echo "$desktop_end_path $HOME/.local/share/applications/$(echo "$desktop_end_path" | awk -F '/' '{print $NF}')" >> "$info_file_outdir"
+    echo "$desktop_end_path $HOME/.local/share/applications/$(basename "$desktop_end_path")" >> "$info_file_outdir"
   fi
 
   # [ BIN ]
   if [ "$pkg_name" = "{NONE}" ]; then
-    pkg_name="$(echo "$path_to_package" | awk -F '/' '{print $NF}')"
+    pkg_name="$(basename "$path_to_package")"
 
     { echo "$pkg_name" ; echo "${pkg_version}_${pkg_revision}" ; echo "" ; echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." ; } > "$bin_outdir/$pkg_name"
 
@@ -383,9 +383,9 @@ download_stage_3 () {
     # echo "" >> "$bin_outdir/$pkg_name"
     # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
-    if install -Dm"$pkg_bin_premissions" "$tmp_dir/$pkg_name" "$bin_outdir/$pkg_name"; then
-      ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
-      echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
+    if install -Dm"$pkg_bin_premissions" "$tmp_dir$pkg_name" "$bin_outdir/$pkg_name"; then
+      ln -s "$bin_outdir$pkg_name" "$HOME/.local/bin/"
+      echo "$bin_outdir$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
     else
       echo "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
       cleanup
@@ -401,8 +401,8 @@ download_stage_3 () {
       file_loc="$(echo "$file" | awk -F '>' '{ print $1 }' )"
     fi
     new_loc="$(echo "$file" | awk -F '>' '{ print $2 }' )"
-    local_loc="$files_outdir/$(echo "$new_loc" | awk -F '/' '{print $NF}')"
-    file_name="$(echo "$file_loc" | awk -F '/' '{print $NF}')"
+    local_loc="$files_outdir/$(basename "$new_loc")"
+    file_name="$(basename "$file_loc")"
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"]
 
@@ -434,7 +434,7 @@ download_stage_3 () {
 
 remove_pkg () {
   outdir="$packages_path/$pkg_name"
-  info_file_outdir="$outdir/$(echo "$path_to_package" | awk -F '/' '{print $NF}')_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
+  info_file_outdir="$outdir/$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
   paths_to_remove="$(tail -n +2 < "$info_file_outdir")"
 
   # [ removing deps ]
@@ -477,7 +477,7 @@ update_checker () {
   needs_update=""
 
   for package in "$packages_path"/*; do
-    current_package="$(echo "$package" | awk -F '/' '{print $NF}')"
+    current_package="$(basename "$package")"
 
     info_file_outdir="$package/${current_package}_files_info"
     current_version="$(head -n 1 < "$info_file_outdir")"
@@ -504,7 +504,7 @@ update_checker () {
 }
 
 update_pkg () {
-  current_package="$(echo "$flag_pkgs" | awk -F '/' '{print $NF}')"
+  current_package="$(echo "$flag_pkgs" | awk -F '/' '{print $NF}')" # XXX: cant remember why i made this test it
 
   info_file_outdir="$package/${current_package}_files_info"
   current_version="$(head -n 1 < "$info_file_outdir")"
@@ -530,7 +530,7 @@ full_update () {
   needs_update=""
 
   for package in "$packages_path"/*; do
-    current_package="$(echo "$package" | awk -F '/' '{print $NF}')"
+    current_package="$(basename "$package")"
 
     info_file_outdir="$package/${current_package}_files_info"
     current_version="$(head -n 1 < "$info_file_outdir")"
@@ -592,13 +592,13 @@ while [ $# -gt 0 ]; do
       ignore_deps=1
       ;;
     -r | --repo)
-      repos_path="$1"
       shift
+      repos_path="$1"
       flag_pkgs="$*"
       ;;
     -p | --path)
-      packages_path="$1"
       shift
+      packages_path="$1"
       flag_pkgs="$*"
       ;;
     -V | --verbose)
