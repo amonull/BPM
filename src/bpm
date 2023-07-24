@@ -362,12 +362,12 @@ download_stage_3 () {
         # XXX: consider if error checking install should be used like in below
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/fish/generated_completions/"
-        echo "$completion_end_path" "$HOME/.local/share/fish/generated_completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
+        echo "$completion_end_path $HOME/.local/share/fish/generated_completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.bash)
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$HOME/.local/share/bash-completion/completions/"
-        echo "$completion_end_path" "$HOME/.local/share/bash-completion/completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
+        echo "$completion_end_path $HOME/.local/share/bash-completion/completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.zsh)
         echo TODO
@@ -414,7 +414,10 @@ download_stage_3 () {
     else
       file_loc="$(echo "$file" | awk -F '>' '{ print $1 }' )"
     fi
-    new_loc="$(echo "$file" | awk -F '>' '{ print $2 }' )"
+    new_loc="$(echo "$file" | awk -F '>' '{ print $2 }' | sed "s|{HOME}|$HOME|g" )"
+    
+    echo "$new_loc"
+
     local_loc="$files_outdir/$(basename "$new_loc")"
     file_name="$(basename "$file_loc")"
 
@@ -424,8 +427,13 @@ download_stage_3 () {
     case "$response" in
       [yY])
         if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
+          
+          mkdir -p "$(dirname "$new_loc")"
+
+          dirname "$new_loc" >> "$info_file_outdir"
+
           ln -s "$local_loc" "$new_loc"
-          echo "$local_loc $new_loc" >> "$files_outdir"
+          echo "$local_loc $new_loc" >> "$info_file_outdir"
         else
           print_warning "[WARNING]: File in: $file_loc does not exists"
           print_warning "skipping $file_loc..."

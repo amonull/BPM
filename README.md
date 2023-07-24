@@ -51,4 +51,4 @@ BPM too permissive in version, build and patches
 - [ ] Add a new ui with fzf that allows users to for packages in said paths.
 - [ ] After new ui is added create a .desktop file to be able to run it as a dekstop application.
 - [ ] add usage
-- [ ] fix symlinking files in download_stage_3
+- [x] fix symlinking files in download_stage_3

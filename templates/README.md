@@ -56,6 +56,10 @@ usage above shows how tags for releases could be gotten (if they existed for thi
 
 This option used in `Name` parameter allows the template creator not have any outputted binary file, this allows for a collection of libraries or tools to be installed using the `Files` parameter, or allows a combination of BPM packages to be installed using the `BPM_deps` parameter.
 
+### {HOME}
+
+Used in files. Used to tell bpm to use full path for users home i.e. {HOME} = /home/\<user\>
+
 ## How To Make Templates
 
 There are three total sections in making a complete template with most being completely optional and avoidable, a fully functional template can be created using only one of three total sections.
@@ -176,7 +180,9 @@ Files parameter is a space seperated string holding all files inside `/tmp/BPM.X
 
 Files parameter can use `{BIN}` to copy and move the binary file somewhere else as well instead of just `$HOME/.local/bin/` or have a second copy of it with a different name.
 
-`Files="File1.txt>$HOME/.local/share/fonts/ files/file2>$HOME/.local/share/icons/ {BIN}>/$HOME/.local/bin/second_name"`
+Files parameter can use `{HOME}` to use the full path for users home
+
+`Files="File1.txt>{HOME}/.local/share/fonts/ files/file2>{HOME}/.local/share/icons/ {BIN}>{HOME}/.local/bin/second_name"`
 
 #### Template For Template
 
