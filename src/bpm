@@ -155,7 +155,6 @@ source_template () {
   pkg_build="$path_to_package/build.sh"
 
   # XXX: if checks might now be useless but kept incase they are needed later
-  # TODO: fix regex negation below
 
   # in second script | is used instead of / since using / used to give errors but in first | gives errors
   # if echo "$pkg_manpages" | grep -qx "Manpages=\"{TEMPLATE}.*\""; then
