@@ -1,5 +1,5 @@
 Name="ani-cli"
-Version="4.4"
+Version="{AUTO:curl -s "https://api.github.com/repos/pystardust/ani-cli/tags" | grep -Po '"name":.*?[^\\]",' | head -n 1 | awk -F'\"' '{print $4}' | tail -c +2 | sed "s/$/.0/"}"
 Revision="1"
 URL="https://github.com/pystardust/ani-cli/releases/download/v4.4/ani-cli https://github.com/pystardust/ani-cli/releases/download/v4.4/ani-cli.1"
 
@@ -8,7 +8,7 @@ Host_deps="grep sed curl mpv aria2c ffmpeg fzf"
 
 Conflicts=""
 Checksum=""
-Premissions="ani-cli>744 ani-cli.1>644"
+Premissions="ani-cli>744"
 
 Manpages="ani-cli.1"
 Completions=""

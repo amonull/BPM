@@ -3,17 +3,19 @@
 readonly packages_path="$HOME/.local/share/BPM/pkgs/"
 readonly repos_path="$HOME/.local/share/BPM/repos/"
 
-if [ ! -d "$repos_path" ]; then
-  mkdir -p "$repos_path"
-fi
+[ -d "$repos_path" ] || mkdir -p "$repos_path"
 
-if [ ! -d "$packages_path" ]; then
-  mkdir -p "$packages_path"
-fi
+[ -d "$packages_path" ] || mkdir -p "$packages_path"
 
 ./src/bpm -r "$(dirname "$(realpath "$0")")/templates" -d bpm
 
-which bpm > /dev/null 2>&1 && (echo ""; echo "BPM is on path at $(which bpm)") || (echo ""; echo "BPM is not on path. Check if $HOME/.local/bin/ is on user path")
+if which bpm > /dev/null 2>&1; then
+  echo ""
+  echo "BPM is on path at $(which bpm)"
+else
+  echo ""
+  echo "BPM is not on path. Check if $HOME/.local/bin/ is on user path"
+fi
 
 echo ""
 echo ""

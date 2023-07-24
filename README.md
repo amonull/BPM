@@ -41,12 +41,13 @@ BPM too permissive in version, build and patches
 
 # TODO
 
-- [ ] fix `{AUTO:*}` in `Version`
+- [x] fix `{AUTO:*}` in `Version`
 - [ ] finish flag usage
 - [x] create the remove functionality
 - [x] create updating functionality
 - [x] create searching functionality
-- [ ] add colors to \[ERR\] \[INFO\] \[WARNING\] by using printf
+- [x] add colors to \[ERR\] \[INFO\] \[WARNING\] by using printf
 - [x] make bpm deps downloaded and removed by bpm
 - [ ] Add a new ui with fzf that allows users to for packages in said paths.
 - [ ] After new ui is added create a .desktop file to be able to run it as a dekstop application.
+- [ ] add usage

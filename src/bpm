@@ -2,7 +2,14 @@
 
 # TODO: change some of the echos to printf to add colors (like red for [ERR]: and amber for [WARNING]: )
 
-[ "$(id -u)" -eq 0 ] && (echo "bpm must be run as regular user (non-root)"; exit 1)
+# [ colors ]
+normal="\e[0;97m"
+red="\e[0;91m"
+yellow="\e[0;93m"
+green="\e[0;92m"
+blue="\e[0;94m"
+
+[ "$(id -u)" -eq 0 ] && (printf "%s" "[ERR]: bpm must be run as regular user (non-root)" "%s", "$red", "$normal"; exit 1)
 
 readonly starting_path="$(pwd)" # since path is changed (to a tmp dir in download_stage_1) it is not known if this will be required in future processes or not
 
@@ -23,7 +30,6 @@ check_updates=0
 ignore_deps=0
 
 flag_pkgs=""
-
 
 #############################################
 ################## GENERAL ##################
@@ -76,6 +82,22 @@ flush_vars () {
   pkg_build=""
 }
 
+print_err () {
+  printf "%s" "$*" "%s", "$red" "$normal"
+}
+
+print_warning () {
+  printf "%s" "$*" "%s", "$yellow" "$normal"
+}
+
+print_info () {
+  printf "%s" "$*" "%s", "$blue" "$normal"
+}
+
+print_success () {
+  printf "%s" "$*" "%s", "$green" "$normal"
+}
+
 
 #############################################
 ################ PREPERATION ################
@@ -85,12 +107,10 @@ find_pkg () {
   readonly AMOUNT_FOUND="$(find "$repos_path" -iname "$*" 2> /dev/null | wc -l)"
 
   if [ "$AMOUNT_FOUND" -gt "1" ]; then
-    echo "[WARNING]: found more than 1 package"
-    echo "the packages found are:"
-    echo ""
+    print_warning "[WARNING]: found more than 1 package"
+    print_warning "the packages found are:\n"
     find "$repos_path" -iname "$**" -exec echo {} \;
-    echo ""
-    echo "be more specific"
+    print_warning "\nbe more specific"
     cleanup
   fi
 
@@ -104,18 +124,15 @@ source_template () {
   flush_vars
   
   if [ ! -f "$path_to_package_template" ]; then
-    echo "[ERR]: package not found"
+    print_err "[ERR]: package not found"
     cleanup
   fi
 
-  # TODO: remove tr -d '"' with something else (especially in version) to not mess with {AUTO:*}
-  # consider usign ... | tail -c +2 | head -c -2 to remove first and last chars in string
-
   # core package variables
-  pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "Name parameter not found"; cleanup))"
-  pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "Version parameter not found"; cleanup))"
-  pkg_revision="$(grep "Revision" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "Revision parameter not found"; cleanup))"
-  pkg_URL="$(grep "URL" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (echo "URL not found"; cleanup))"
+  pkg_name="$(grep "Name" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (print_err "[ERR]: Name parameter not found"; cleanup))"
+  pkg_version="$(grep "Version" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (print_err "[ERR]: Version parameter not found"; cleanup))"
+  pkg_revision="$(grep "Revision" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (print_err "[ERR]: Revision parameter not found"; cleanup))"
+  pkg_URL="$(grep "URL" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2 || (print_err "[ERR]: URL not found"; cleanup))"
 
   # dependecies
   pkg_bpm_deps="$(grep "BPM_deps" "$path_to_package_template" | awk -F '=' '{ print $2 }' | tail -c +2 | head -c -2)"
@@ -167,20 +184,20 @@ prepare_system () {
   not_installed_host_deps=""
   not_installed_bpm_deps=""
 
-  # XXX: consider using whereis instead of which
+  # XXX: consider using whereis -bs <dep> instead of which
+  # whereis can search for sources and libraries instead of
+  # just binaries
 
   for conflict in $pkg_conflicts; do
     which "$conflict" > /dev/null 2>&1 && found_conflicts="$found_conflicts $conflict"
   done
 
   if [ "$found_conflicts" ]; then
-    echo "[ERR]: following conflicts were found on system:"
-    echo ""
+    print_err "[ERR]: following conflicts were found on system:\n"
     for conflict in $found_conflicts; do 
       echo "$conflict"
     done
-    echo ""
-    echo "exiting..."
+    print_err "\nexiting..."
     cleanup
   fi
 
@@ -194,23 +211,19 @@ prepare_system () {
     done
 
     if [ "$not_installed_host_deps" ]; then
-      echo "[ERR]: following dependecies needs to be installed with host package manager:"
-      echo ""
+      print_err "[ERR]: following dependecies needs to be installed with host package manager:\n"
       for dep in $not_installed_host_deps; do
         echo "  $dep"
       done
-      echo ""
-      echo "exiting..."
+      print_err "\nexiting..."
       cleanup
     fi
 
     if [ "$not_installed_bpm_deps" ]; then
-      echo "[INFO]: found required BPM dependecies: "
-      echo ""
+      print_info "[INFO]: found required BPM dependecies:\n"
       for dep in $not_installed_bpm_deps; do
         echo "  $dep"
       done
-      echo ""
       read -r -p "install those dependecies? [y/N]: " response
       case "$response" in
         [yY])
@@ -219,8 +232,8 @@ prepare_system () {
           done
           ;;
         *)
-          echo "[ERR]: dependecies are still required. Cannot install $pkg_name."
-          echo "exiting..."
+          print_err "[ERR]: dependecies are still required. Cannot install $pkg_name."
+          print_err "exiting..."
           cleanup
           ;;
       esac
@@ -237,13 +250,13 @@ download_stage_1 () {
   # gets all files from pkg_URL and puts into /tmp/BPM.XXXXXX/
   
   # XXX: PATH CHANGED HERE
-  cd "$tmp_dir" || (echo "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
+  cd "$tmp_dir" || (print_err "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
 
   for url in $pkg_URL; do
     if echo "$url" | grep -q '\.git$' ; then
-      git clone "$url" "$tmp_dir" || (echo "[ERR]: couldn't clone git repo: $url into $tmp_dir"; cleanup)
+      git clone "$url" "$tmp_dir" || (print_err "[ERR]: couldn't clone git repo: $url into $tmp_dir"; cleanup)
     else
-      curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (echo "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
+      curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
     fi
   done
 }
@@ -256,13 +269,13 @@ download_stage_2 () {
   if [ -d "$pkg_patches" ]; then
     for path in "$pkg_patches"*; do
       if [ ! -f "$path" ]; then
-        echo "[WARNING]: patch: $path is not a file. skipping..."
+        print_warning "[WARNING]: patch: $path is not a file.\nskipping..."
         continue
       fi
 
       file_to_patch="$(echo "$path" | awk -F '.' '{ print $1 }' )"
 
-      patch -u "$file_to_patch" --input="$path" > /dev/null 2>&1 || (echo "[ERR]: couldn't apply patch: $path to $file_to_patch. exiting..."; cleanup)
+      patch -u "$file_to_patch" --input="$path" > /dev/null 2>&1 || (print_err "[ERR]: couldn't apply patch: $path to $file_to_patch.\nexiting..."; cleanup)
     done
   fi
 
@@ -275,18 +288,17 @@ download_stage_2 () {
     read -r -p "Run build script above? [y/N]: " response
     case "$response" in
       [yY])
-        echo "running $pkg_build inside $tmp_dir"
-        sh "$pkg_build"
+        sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
         ;;
       *)
         read -r -p "Not running build script. Exit [Y/n]: " response2
         case "$response2" in
           [nN])
-            echo "[INFO]: $pkg_build didn't run. skipping checksums to avoid errors..."
+            print_info "[INFO]: $pkg_build didn't run.\nskipping checksums to avoid errors..."
             return
             ;;
           *)
-            echo "exiting..."
+            print_info "exiting..."
             cleanup
             ;;
         esac
@@ -299,13 +311,13 @@ download_stage_2 () {
     file_name="$(echo "$checksum" | awk -F '>' '{ print $2 }')"
     checksum_method="$(echo "$checksum" | awk -F '>' '{ print $1 }' | tr -d '{')"
     expected_checksum_result="$(echo "$checksum" | awk -F '>' '{ print $2 }')"
-    actual_checksum_result=$($checksum_method "$file_name" || (echo "[ERR]: error in making checksum file: $file_name"; cleanup))
+    actual_checksum_result=$($checksum_method "$file_name" || (print_err "[ERR]: error in making checksum file: $file_name"; cleanup))
 
     if [ ! "$expected_checksum_result" = "$actual_checksum_result" ]; then
-      echo "[ERR]: checksums in file: $file_name do not match"
-      echo "expected: $expected_checksum_result"
-      echo "actual: $actual_checksum_result"
-      echo "exiting..."
+      print_err "[ERR]: checksums in file: $file_name do not match"
+      print_err "expected: $expected_checksum_result"
+      print_err "actual: $actual_checksum_result"
+      print_err "exiting..."
 
       cleanup
     fi
@@ -388,7 +400,7 @@ download_stage_3 () {
       ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
       echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
     else
-      echo "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
+      print_err "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
       cleanup
     fi
   fi
@@ -414,17 +426,17 @@ download_stage_3 () {
           ln -s "$local_loc" "$new_loc"
           echo "$local_loc $new_loc" >> "$files_outdir"
         else
-          echo "[WARNING]: File in: $file_loc does not exists"
-          echo "skipping $file_loc..."
+          print_warning "[WARNING]: File in: $file_loc does not exists"
+          print_warning "skipping $file_loc..."
         fi
         ;;
       *)
-        echo "skipping..."
+        print_info "skipping..."
         ;;
     esac
   done
 
-  cd "$starting_path" || (echo "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
+  cd "$starting_path" || (print_err "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
   rm -rf "$tmp_dir"
 }
 
@@ -440,7 +452,7 @@ remove_pkg () {
 
   # [ removing deps ]
   if [ "$pkg_bpm_deps" ]; then
-    echo "[INFO]: Found installed BPM deps: "
+    print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
       read -r -p "Remove $bpm_dep? [y/N]: " respone
       case "$respone" in
@@ -448,14 +460,14 @@ remove_pkg () {
           bpm -R "$bpm_dep"
           ;;
         *)
-          echo "[INFO]: not removing $bpm_dep"
+          print_info "[INFO]: not removing $bpm_dep"
           ;;
       esac
     done
   fi
 
   if [ "$pkg_host_deps" ]; then
-    echo "[INFO]: Found installed host deps: "
+    print_info "[INFO]: Found installed host deps: "
     for host_dep in $pkg_host_deps; do
       echo "  $host_dep"
     done
@@ -463,7 +475,7 @@ remove_pkg () {
   
   # [ removing symlinks and installed files ]
   for path in $paths_to_remove; do
-    unlink "$(echo "$path" | awk '{print $2}')" || (echo "[WARNING]: cannot unlink: $(echo "$path" | awk '{print $2}')"; echo "skipping...")
+    unlink "$(echo "$path" | awk '{print $2}')" || (print_warning "[WARNING]: cannot unlink: $(echo "$path" | awk '{print $2}')"; print_warning "skipping...")
   done
 
   rm -rf "$outdir"
@@ -491,7 +503,7 @@ update_checker () {
     fi
   done
 
-  echo "[INFO]: Following packages need to be updated"
+  print_info "[INFO]: Following packages need to be updated"
   for package in $needs_update; do
     echo "  $package"
   done
@@ -514,7 +526,7 @@ update_pkg () {
   source_template
 
   if [ "$current_version" = "${pkg_version}_${pkg_revision}" ]; then
-    echo "[INFO]: $flag_pkgs already on newest version on template"
+    print_info "[INFO]: $flag_pkgs already on newest version on template"
     cleanup_success
   fi
 
@@ -555,7 +567,7 @@ full_update () {
 ################ START POINT ################
 #############################################
 
-[ $# -lt 1 ] && (echo "not enough parameters supplied"; usage) && cleanup
+[ $# -lt 1 ] && (print_err "not enough parameters supplied\n"; usage) && cleanup
 
 while [ $# -gt 0 ]; do
   case "$1" in
