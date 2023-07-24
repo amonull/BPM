@@ -3,11 +3,12 @@
 # TODO: change some of the echos to printf to add colors (like red for [ERR]: and amber for [WARNING]: )
 
 # [ colors ]
-normal="\e[0;97m"
-red="\e[0;91m"
-yellow="\e[0;93m"
-green="\e[0;92m"
-blue="\e[0;94m"
+# TODO: color codes like below do not work in dash find fix
+normal="\033[0;97m"
+red="\033[0;91m"
+yellow="\033[0;93m"
+green="\033[0;92m"
+blue="\033[0;94m"
 
 [ "$(id -u)" -eq 0 ] && (printf "%s" "[ERR]: bpm must be run as regular user (non-root)" "%s", "$red", "$normal"; exit 1)
 
@@ -83,19 +84,19 @@ flush_vars () {
 }
 
 print_err () {
-  printf "%s" "$*" "%s", "$red" "$normal"
+  printf '%b' "${red}$*${normal}\n"
 }
 
 print_warning () {
-  printf "%s" "$*" "%s", "$yellow" "$normal"
+  printf '%b' "${yellow}$*${normal}\n"
 }
 
 print_info () {
-  printf "%s" "$*" "%s", "$blue" "$normal"
+  printf '%b' "${blue}$*${normal}\n"
 }
 
 print_success () {
-  printf "%s" "$*" "%s", "$green" "$normal"
+  printf '%b' "${green}$*${normal}\n"
 }
 
 
@@ -417,12 +418,12 @@ download_stage_3 () {
     local_loc="$files_outdir/$(basename "$new_loc")"
     file_name="$(basename "$file_loc")"
 
-    file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"]
+    file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
 
-    read -r -p "move file: $tmp_dir/$file_loc into $new_loc? [y/N]: " response
+    read -r -p "move file: $tmp_dir$file_loc into $new_loc? [y/N]: " response
     case "$response" in
       [yY])
-        if install -Dm"$file_premission" "$tmp_dir/$file_loc" "$local_loc"; then
+        if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
           ln -s "$local_loc" "$new_loc"
           echo "$local_loc $new_loc" >> "$files_outdir"
         else
