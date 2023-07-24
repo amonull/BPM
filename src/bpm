@@ -1,23 +1,31 @@
 #!/bin/sh
 
-# TODO: change some of the echos to printf to add colors (like red for [ERR]: and amber for [WARNING]: )
+# TODO: add colors to read
+# make overall output prettier
+# make issue on fixing if statments
+# i.e. do not make if statements as
+#   if [ "$var" ]
+# but instead check with something to
+# make them more reliable
+# change with
+#   if [ -z "$var" ]
+# -z checks if length of var is 0
 
 # [ colors ]
-# TODO: color codes like below do not work in dash find fix
 normal="\033[0;97m"
 red="\033[0;91m"
 yellow="\033[0;93m"
 green="\033[0;92m"
 blue="\033[0;94m"
 
-[ "$(id -u)" -eq 0 ] && (printf "%s" "[ERR]: bpm must be run as regular user (non-root)" "%s", "$red", "$normal"; exit 1)
+[ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
 
 readonly starting_path="$(pwd)" # since path is changed (to a tmp dir in download_stage_1) it is not known if this will be required in future processes or not
 
 readonly _version="v0.2_alpha"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
-repos_path="$HOME/.local/share/BPM/templates/" # templates stored here (flag -r changes this location)
+repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
 tmp_dir="$(mktemp -d -t BPM.XXXXXXXXXX)/"
 
 # [ flags ]
@@ -115,8 +123,16 @@ find_pkg () {
     cleanup
   fi
 
-  readonly path_to_package="$(find "$repos_path" -iname "$*" 2> /dev/null)"
-  readonly path_to_package_template="$path_to_package/Template"
+  path_to_package="$(find "$repos_path" -iname "$*" 2> /dev/null)"
+  path_to_package_template="$path_to_package/Template"
+
+  # fixing issue that occur with symlinks
+  if [ -L "$path_to_package" ]; then
+    path_to_package="$(readlink "$path_to_package")"
+  fi
+  if [ -L "$path_to_package_template" ]; then
+    path_to_package_template="$(readlink "$path_to_package_template")"
+  fi
 }
 
 source_template () {
@@ -154,23 +170,26 @@ source_template () {
   pkg_patches="$path_to_package/patches/"
   pkg_build="$path_to_package/build.sh"
 
-  # XXX: if checks might now be useless but kept incase they are needed later
+  # XXX: if checks might now be useless but kept as comments incase they are needed later
 
   # in second script | is used instead of / since using / used to give errors but in first | gives errors
   # if echo "$pkg_manpages" | grep -qx "Manpages=\"{TEMPLATE}.*\""; then
-  pkg_manpages="$(echo "$pkg_manpages" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")" # i hate regex
-  pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
-  # fi
+  if [ "$pkg_manpages" ]; then
+    pkg_manpages="$(echo "$pkg_manpages" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")" # i hate regex
+    pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
+  fi
 
   # if echo "$pkg_completion" | grep -qx "Completion=\"{TEMPLATE}.*\""; then
-  pkg_completion="$(echo "$pkg_completion" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")"
-  pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
-  # fi
+  if [ "$pkg_completion" ]; then
+    pkg_completion="$(echo "$pkg_completion" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")"
+    pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
+  fi
 
   # if echo "$pkg_desktop" | grep -qx "Desktop=\"{TEMPLATE}.*\""; then
-  pkg_desktop="$(echo "$pkg_desktop" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")"
-  pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
-  # fi
+  if [ "$pkg_desktop" ]; then
+    pkg_desktop="$(echo "$pkg_desktop" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")"
+    pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
+  fi
 
   for premission in $pkg_premissions; do
     if echo "$premission" | grep -qx "\{BIN\}>[0-7][0-7][0-7]" > /dev/null 2>&1; then # > /dev/null is needed to avoid stray \ in grep but that stray \ avoids errors
@@ -402,6 +421,12 @@ download_stage_3 () {
     if install -Dm"$pkg_bin_premissions" "$tmp_dir$pkg_name" "$bin_outdir/$pkg_name"; then
       ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
       echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
+      # [ second name check ]
+      if echo "$pkg_name" | grep -q '{.*}'; then
+        alt_name="$(echo "$pkg_name" | awk -F '{' '{print $2}' | tr -d '}')"
+        ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/$alt_name"
+        echo "$bin_outdir/$pkg_name $HOME/.local/bin/$alt_name" >> "$info_file_outdir"
+      fi
     else
       print_err "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
       cleanup
@@ -409,6 +434,7 @@ download_stage_3 () {
   fi
 
   # [ FILES ]
+  dirs_to_append_file=""
   for file in $pkg_files; do
     
     if [ "$(echo "$file" | awk -F '>' '{ print $1 }' )" = "{BIN}" ]; then
@@ -426,11 +452,10 @@ download_stage_3 () {
     case "$response" in
       [yY])
         if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
-          
-          # TODO: make file dirs from root and document which ones are made by bpm for smooth removing
-          mkdir -p "$(dirname "$new_loc")"
+          dirs_created="$(mkdir -vp "$(dirname "$new_loc")")"
+          dirs_created_pretty="$(echo "$dirs_created" | awk -F "'" '{print $2}')"
 
-          dirname "$new_loc" >> "$info_file_outdir"
+          dirs_to_append_file="$dirs_to_append_file\n$dirs_created_pretty"
 
           ln -s "$local_loc" "$new_loc"
           echo "$local_loc $new_loc" >> "$info_file_outdir"
@@ -444,6 +469,7 @@ download_stage_3 () {
         ;;
     esac
   done
+  printf '%b' "$dirs_to_append_file" >> "$info_file_outdir"
 
   cd "$starting_path" || (print_err "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
   rm -rf "$tmp_dir"
@@ -455,9 +481,8 @@ download_stage_3 () {
 #############################################
 
 remove_pkg () {
-  outdir="$packages_path/$pkg_name"
-  info_file_outdir="$outdir/$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
-  paths_to_remove="$(tail -n +2 < "$info_file_outdir")"
+  outdir="$packages_path$pkg_name/"
+  info_file_outdir="$outdir$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
 
   # [ removing deps ]
   if [ "$pkg_bpm_deps" ]; then
@@ -483,9 +508,22 @@ remove_pkg () {
   fi
   
   # [ removing symlinks and installed files ]
-  for path in $paths_to_remove; do
-    unlink "$(echo "$path" | awk '{print $2}')" || (print_warning "[WARNING]: cannot unlink: $(echo "$path" | awk '{print $2}')"; print_warning "skipping...")
-  done
+  while read -r path; do
+    dir_path="$(echo "$path" | awk '{print $1}')"
+    symlink_path="$(echo "$path" | awk '{print $2}')"
+
+    if [ "$symlink_path" ]; then
+      if ! unlink "$symlink_path"; then
+        print_err "[ERR]: couldn't unlink path: $symlink_path"
+      fi
+    elif [ "$dir_path" ]; then
+      if ! rm -rf "$dir_path"; then
+        print_err "[ERR]: couldn't remove dir: $dir_path"
+      fi
+    else
+      print_err "[ERR]: neither symlink_path or dir_path is set"
+    fi
+  done < "$info_file_outdir"
 
   rm -rf "$outdir"
 }
@@ -644,7 +682,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if [ "$download" ]; then
+if [ ! "$download" = 0 ]; then
   for package in $flag_pkgs; do
     find_pkg "$flag_pkgs"
     source_template
@@ -658,34 +696,35 @@ if [ "$download" ]; then
   cleanup_success
 fi
 
-if [ "$remove" ]; then
+if [ ! "$remove" = 0 ]; then
   for package in $flag_pkgs; do
     find_pkg "$package"
+    source_template
     remove_pkg
   done
 
   cleanup_success
 fi
 
-if [ "$search" ]; then
+if [ ! "$search" = 0 ]; then
   find "$repos_path" -iname "$flag_pkgs"
 
   cleanup_success
 fi
 
-if [ "$update" ]; then
+if [ ! "$update" = 0 ]; then
   full_update
 
   cleanup_success
 fi
 
-if [ "$update_pkg" ]; then
+if [ ! "$update_pkg" = 0 ]; then
   update_pkg
 
   cleanup_success
 fi
 
-if [ "$check_updates" ]; then
+if [ ! "$check_updates" = 0 ]; then
   update_checker
 
   cleanup_success
