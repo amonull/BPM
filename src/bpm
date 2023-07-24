@@ -353,11 +353,12 @@ download_stage_3 () {
   desktop_outdir="$outdir/dekstop"
   files_outdir="$outdir/files"
   bin_outdir="$outdir/bin"
+  version_file_outdir="$outdir/VERSION"
   info_file_outdir="$outdir/$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
   mkdir -p "$outdir" "$man_outdir" "$completions_outdir" "$desktop_outdir" "$files_outdir" "$bin_outdir"
   touch "$info_file_outdir"
 
-  echo "${pkg_version}_${pkg_revision}" >> "$info_file_outdir"
+  echo "${pkg_version}_${pkg_revision}" >> "$version_file_outdir"
 
   # [ MANPAGES ]
   for manpage in $pkg_manpages; do
@@ -455,7 +456,7 @@ download_stage_3 () {
           dirs_created="$(mkdir -vp "$(dirname "$new_loc")")"
           dirs_created_pretty="$(echo "$dirs_created" | awk -F "'" '{print $2}')"
 
-          dirs_to_append_file="$dirs_to_append_file\n$dirs_created_pretty"
+          dirs_to_append_file="$dirs_to_append_file$dirs_created_pretty\n"
 
           ln -s "$local_loc" "$new_loc"
           echo "$local_loc $new_loc" >> "$info_file_outdir"
@@ -471,6 +472,8 @@ download_stage_3 () {
   done
   printf '%b' "$dirs_to_append_file" >> "$info_file_outdir"
 
+  # [ END ]
+  sed -i '$ d' "$info_file_outdir" # removing leftover newline
   cd "$starting_path" || (print_err "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
   rm -rf "$tmp_dir"
 }
