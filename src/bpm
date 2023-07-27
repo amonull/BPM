@@ -202,6 +202,7 @@ prepare_system () {
   # checks for dependecies and conflicts
   found_conflicts=""
   not_installed_host_deps=""
+  not_installed_host_alternative_deps=""
   not_installed_bpm_deps=""
 
   # XXX: consider using whereis -bs <dep> instead of which
@@ -209,7 +210,7 @@ prepare_system () {
   # just binaries
 
   for conflict in $pkg_conflicts; do
-    which "$conflict" > /dev/null 2>&1 && found_conflicts="$found_conflicts $conflict"
+    whereis -bs "$conflict" > /dev/null 2>&1 && found_conflicts="$found_conflicts $conflict"
   done
 
   if [ "$found_conflicts" ]; then
@@ -223,11 +224,24 @@ prepare_system () {
 
   if [ ! "$ignore_deps" ]; then
     for host_dep in $pkg_host_deps; do
-      which "$host_dep" > /dev/null 2>&1 || not_installed_host_deps="$not_installed_host_deps $host_dep"
+      if grep -qx "{.*}"; then
+        host_dep="$(echo "$host_dep" | tr -d '{' | tr -d '}')"
+        for alt_host_deps in $host_dep; do
+          if [ -z "$(whereis -bs "$alt_host_deps" | awk -F ':' '{print $NF}')" ]; then
+            not_installed_host_alternative_deps="$not_installed_host_alternative_deps $host_dep"
+          fi
+        done
+      else
+        if [ -z "$(whereis -bs "$host_dep" | awk -F ':' '{print $NF}')" ]; then
+            not_installed_host_deps="$not_installed_host_deps $host_dep"
+        fi
+      fi
     done
 
     for bpm_dep in $pkg_bpm_deps; do
-      which "$bpm_dep" > /dev/null 2>&1 || not_installed_bpm_deps="$not_installed_bpm_deps $bpm_dep"
+      if [ -z "$(whereis -bs "$bpm_dep" | awk -F ':' '{print $NF}')" ]; then
+        not_installed_bpm_deps="$not_installed_bpm_deps $bpm_dep"
+      fi
     done
 
     if [ "$not_installed_host_deps" ]; then
@@ -236,6 +250,16 @@ prepare_system () {
         echo "  $dep"
       done
       print_err "\nexiting..."
+      cleanup
+    fi
+
+    if [ -z "$not_installed_host_alternative_deps" ]; then
+      # TODO: outputting needs to be refined incase multiple alternative deps were used
+      print_err "[ERR]: atleast one of following dependecies needs to be installed on the system using the host package manager:\n"
+      for dep in $not_installed_host_alternative_deps; do
+        echo "  $dep"
+      done
+      print_err "exiting..."
       cleanup
     fi
 
@@ -268,9 +292,6 @@ prepare_system () {
 
 download_stage_1 () {
   # gets all files from pkg_URL and puts into /tmp/BPM.XXXXXX/
-  
-  # XXX: PATH CHANGED HERE
-  cd "$tmp_dir" || (print_err "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
 
   for url in $pkg_URL; do
     if echo "$url" | grep -q '\.git$' ; then
@@ -615,6 +636,9 @@ full_update () {
 #############################################
 ################ START POINT ################
 #############################################
+
+# XXX: Location Change here
+cd "$tmp_dir" || (print_err "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
 
 [ $# -lt 1 ] && (print_err "not enough parameters supplied\n"; usage) && cleanup
 
