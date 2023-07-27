@@ -20,9 +20,7 @@ blue="\033[0;94m"
 
 [ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
 
-readonly starting_path="$(pwd)" # since path is changed (to a tmp dir in download_stage_1) it is not known if this will be required in future processes or not
-
-readonly _version="v0.2_alpha"
+readonly _version="1.0"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
@@ -288,6 +286,8 @@ download_stage_2 () {
   # builds pkgs in /tmp/BPM.XXXXXX/
   
   # [ PATCHING ]
+  # TODO: needs fix on patches paths due to using git to install as well
+  # consider using sub-shells to cd and using < to redirect patches
   if [ -d "$pkg_patches" ]; then
     for path in "$pkg_patches"*; do
       if [ ! -f "$path" ]; then
@@ -470,11 +470,10 @@ download_stage_3 () {
         ;;
     esac
   done
-  printf '%b' "$dirs_to_append_file" >> "$info_file_outdir"
+  printf "$dirs_to_append_file" >> "$info_file_outdir"
 
   # [ END ]
   sed -i '$ d' "$info_file_outdir" # removing leftover newline
-  cd "$starting_path" || (print_err "[ERR]: cannot cd into starting path: $starting_path"; cleanup)
   rm -rf "$tmp_dir"
 }
 
