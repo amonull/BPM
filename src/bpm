@@ -225,7 +225,7 @@ prepare_system () {
   if [ ! "$ignore_deps" ]; then
     for host_dep in $pkg_host_deps; do
       if grep -qx "{.*}"; then
-        host_dep="$(echo "$host_dep" | tr -d '{' | tr -d '}')"
+        host_dep="$(echo "$host_dep" | tr -d '{}')"
         for alt_host_deps in $host_dep; do
           if [ -z "$(whereis -bs "$alt_host_deps" | awk -F ':' '{print $NF}')" ]; then
             not_installed_host_alternative_deps="$not_installed_host_alternative_deps $host_dep"
