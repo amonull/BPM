@@ -193,13 +193,13 @@ source_template () {
     pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package|g")"
   fi
 
-  if [ -n "$pkg_URL" ]; then
-    pkg_URL="$(echo "$pkg_URL" | sed "s|{VERSION}|$pkg_version|g")"
-  fi
-
   if echo "$pkg_version" | grep -qx "{AUTO->.*}"; then
     command="$(echo "$pkg_version" | awk -F '->' '{print $2}' | head -c -2)"
     pkg_version="$(eval "$command")"
+  fi
+
+  if [ -n "$pkg_URL" ]; then
+    pkg_URL="$(echo "$pkg_URL" | sed "s|{VERSION}|$pkg_version|g" | tr -d ' ')"
   fi
 
   if [ -L "$pkg_build" ]; then
@@ -313,11 +313,12 @@ download_stage_1 () {
     if echo "$url" | grep -q '\.git$' ; then
       git clone "$url" "$tmp_dir" || (print_err "[ERR]: couldn't clone git repo: $url into $tmp_dir"; cleanup)
     else
-      curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
-        if echo "$url" | grep -q '\.tar\.gz$'; then
-          # XXX: add multiple options to unarchive different file types
-          tar -C "$tmp_dir" -xzf "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't un-tar file: $tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')"; cleanup)
-        fi
+      if echo "$url" | grep -q '\.tar\.gz$'; then
+        # XXX: add multiple options to unarchive different file types
+        curl -L "$url" | tar xz -C "$tmp_dir" || (print_err "[ERR]: couldn't curl and unpack url: $url")
+      else
+        curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
+      fi
     fi
   done
 }
@@ -415,8 +416,7 @@ download_stage_3 () {
     end_path="$man_outdir/man$ends_with/"
     ln_path="${manpages_path}man$ends_with/"
 
-    mkdir -p "$end_path"
-    mkdir -p "$ln_path"
+    mkdir -p "$end_path" "$ln_path"
 
     # XXX: consider if error checking install should be used like in below
     install -Dm644 "$manpage" "$end_path"
