@@ -1,16 +1,5 @@
 #!/bin/sh
 
-# TODO: add colors to read
-# make overall output prettier
-# make issue on fixing if statments
-# i.e. do not make if statements as
-#   if [ "$var" ]
-# but instead check with something to
-# make them more reliable
-# change with
-#   if [ -z "$var" ]
-# -z checks if length of var is 0
-
 # [ colors ]
 normal="\033[0;97m"
 red="\033[0;91m"
@@ -24,6 +13,14 @@ readonly _version="1.0"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
+
+manpages_path="$HOME/.local/share/man/"
+bash_comp_path="$HOME/.local/share/bash-completion/completions/"
+fish_comp_path="$HOME/.local/share/fish/generated_completions/"
+zsh_comp_path=""
+desktop_path="$HOME/.local/share/applications/"
+symlink_bin_path="$HOME/.local/bin/"
+
 tmp_dir="$(mktemp -d -t BPM.XXXXXXXXXX)/"
 
 #############################################
@@ -402,7 +399,7 @@ download_stage_3 () {
   for manpage in $pkg_manpages; do
     ends_with=$(echo "$manpage" | awk -F '.' '{ print $2 }')
     end_path="$man_outdir/man$ends_with/"
-    ln_path="$HOME/.local/share/man/man$ends_with/"
+    ln_path="$manpages_path/man$ends_with/"
 
     # XXX: consider if error checking install should be used like in below
     install -Dm644 "$manpage" "$end_path"
@@ -421,16 +418,17 @@ download_stage_3 () {
       *.fish)
         # XXX: consider if error checking install should be used like in below
         install -Dm644 "$completion" "$completion_end_path"
-        ln -s "$completion_end_path" "$HOME/.local/share/fish/generated_completions/"
-        echo "$completion_end_path $HOME/.local/share/fish/generated_completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
+        ln -s "$completion_end_path" "$fish_comp_path"
+        echo "$completion_end_path $fish_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.bash)
         install -Dm644 "$completion" "$completion_end_path"
-        ln -s "$completion_end_path" "$HOME/.local/share/bash-completion/completions/"
-        echo "$completion_end_path $HOME/.local/share/bash-completion/completions/$(basename "$completion_end_path")" >> "$info_file_outdir"
+        ln -s "$completion_end_path" "$bash_comp_path"
+        echo "$completion_end_path $bash_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.zsh)
         echo TODO
+        echo $zsh_comp_path
         ;;
       *)
         ;;
@@ -440,8 +438,8 @@ download_stage_3 () {
   # [ DESKTOP ]
   desktop_end_path="$desktop_outdir/$(basename "$pkg_desktop")"
   if install -Dm644 "$pkg_desktop" "$desktop_end_path" 2> /dev/null; then
-    ln -s "$desktop_end_path" "$HOME/.local/share/applications/"
-    echo "$desktop_end_path $HOME/.local/share/applications/$(basename "$desktop_end_path")" >> "$info_file_outdir"
+    ln -s "$desktop_end_path" "$desktop_path"
+    echo "$desktop_end_path $desktop_path$(basename "$desktop_end_path")" >> "$info_file_outdir"
   fi
 
   # [ BIN ]
@@ -458,13 +456,13 @@ download_stage_3 () {
     # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
     if install -Dm"$pkg_bin_premissions" "$tmp_dir$pkg_name" "$bin_outdir/$pkg_name"; then
-      ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/"
-      echo "$bin_outdir/$pkg_name $HOME/.local/bin/$pkg_name" >> "$info_file_outdir"
+      ln -s "$bin_outdir/$pkg_name" "$symlink_bin_path"
+      echo "$bin_outdir/$pkg_name $symlink_bin_path$pkg_name" >> "$info_file_outdir"
       # [ second name check ]
       if echo "$pkg_name" | grep -q '{.*}'; then
         alt_name="$(echo "$pkg_name" | awk -F '{' '{print $2}' | tr -d '}')"
-        ln -s "$bin_outdir/$pkg_name" "$HOME/.local/bin/$alt_name"
-        echo "$bin_outdir/$pkg_name $HOME/.local/bin/$alt_name" >> "$info_file_outdir"
+        ln -s "$bin_outdir/$pkg_name" "$symlink_bin_path$alt_name"
+        echo "$bin_outdir/$pkg_name $symlink_bin_path$alt_name" >> "$info_file_outdir"
       fi
     else
       print_err "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
