@@ -232,6 +232,8 @@ prepare_system () {
       if [ -n "$(echo "$host_dep" | grep -x "{.*}")" ]; then
         host_dep="$(echo "$host_dep" | tr -d '{}' | tr ',' ' ')"
         for alt_host_deps in $host_dep; do
+          # XXX: currently checking this way is incorrect. fix this
+          # i.e. run loop if one is installed stop as this dep being fulfilled
           if [ -z "$(whereis -bs "$alt_host_deps" | awk -F ':' '{print $NF}')" ]; then
             not_installed_host_alternative_deps="$not_installed_host_alternative_deps $host_dep"
           fi
@@ -259,7 +261,6 @@ prepare_system () {
     fi
 
     if [ -n "$not_installed_host_alternative_deps" ]; then
-      # TODO: outputting needs to be refined incase multiple alternative deps were used
       print_err "[ERR]: atleast one of following dependecies needs to be installed on the system using the host package manager:\n"
       for dep in $not_installed_host_alternative_deps; do
         echo "  $dep"
@@ -577,8 +578,10 @@ update_checker () {
   for package in "$packages_path"/*; do
     current_package="$(basename "$package")"
 
-    info_file_outdir="$package/${current_package}_files_info"
-    current_version="$(head -n 1 < "$info_file_outdir")"
+    # info_file_outdir="$package/${current_package}_files_info"
+    # current_version="$(head -n 1 < "$info_file_outdir")"
+    current_version="$(cat "$package/VERSION")"
+    echo "current_ver: $current_version"
 
     find_pkg "$current_package"
     source_template
