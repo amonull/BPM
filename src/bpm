@@ -692,7 +692,7 @@ while [ $# -gt 0 ]; do
       check_updates=1
       ;;
     -S|--self-update)
-      self_update=1
+      update_self=1
       ;;
     -I|--ignore-deps)
       ignore_deps=1
@@ -785,8 +785,8 @@ if [ -n "${check_updates+x}" ]; then
   cleanup_success
 fi
 
-if [ -n "${self_update+x}" ]; then
-  self-update
+if [ -n "${update_self+x}" ]; then
+  self_update
 
   cleanup_success
 fi
