@@ -45,6 +45,8 @@ usage () {
       Checks for updates
     -S, --self-update
       Have bpm update itself
+    -F, --redownload
+      Redownloads a package after uninstalling it
     -I, --ignore-deps
       Doesn't check or install dependecies. It is recommended to not use this unless you know it is required
     -r, --repo
@@ -706,6 +708,9 @@ while [ $# -gt 0 ]; do
     -S|--self-update)
       update_self=1
       ;;
+    -F|--redownload)
+      redownload=1
+      ;;
     -I|--ignore-deps)
       ignore_deps=1
       ;;
@@ -798,6 +803,13 @@ if [ -n "${update_self+x}" ]; then
   self_update
 
   cleanup_success
+fi
+
+if [ -n "${redownload+x}" ]; then
+  for package in $flag_pkgs; do
+    bpm -R "$package" # remove package
+    bpm -d "$package" # reinstall package (cannot update bpm)
+  done
 fi
 
 print_err "[ERR]: incorrect options supplied"
