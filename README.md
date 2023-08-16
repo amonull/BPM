@@ -4,7 +4,7 @@ BPM used to stand for basic package manager but no longer stands for that as BPM
 
 This program was built for users that use package managers that do not have all the packages that they want they also do not want to go through the hassle of learning other package managers that either offer far more than just simple package mangment but also have little quirks and features that one would like to avoid.
 
-I've tried to make as simple as possible to make and to make them almost fully automated. [information on templates and how to make them](https://github.com/amonull/BPM/tree/main/templates)
+I've tried to make template creation as simple as possible to allow basically anybody to be able to create these templates and to make them almost fully automated. [information on templates and how to make them](https://github.com/amonull/BPM/tree/main/templates)
 
 # Dependecies:
 - posix shell (like dash or bash)
