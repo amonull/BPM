@@ -7,6 +7,7 @@ readonly repos_path="$HOME/.local/share/BPM/repos/"
 
 [ -d "$packages_path" ] || mkdir -p "$packages_path"
 
+# XXX: this needs to be changed where the template is placed in a way that bpm cannot remove it i.e. installed without bpm
 ./src/bpm -r "$(dirname "$(realpath "$0")")/templates" -d bpm
 
 if which bpm > /dev/null 2>&1; then

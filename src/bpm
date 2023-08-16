@@ -578,8 +578,6 @@ update_checker () {
   for package in "$packages_path"/*; do
     current_package="$(basename "$package")"
 
-    # info_file_outdir="$package/${current_package}_files_info"
-    # current_version="$(head -n 1 < "$info_file_outdir")"
     current_version="$(cat "$package/VERSION")"
     echo "current_ver: $current_version"
 
@@ -596,19 +594,20 @@ update_checker () {
     echo "  $package"
   done
 
-  read -r -p "Update all now? [y/N]: " respone
-  case "$respone" in
-    [yY])
-      bpm -u
-      ;;
-  esac
+  if [ -n "$needs_update" ]; then
+    read -r -p "Update all now? [y/N]: " respone
+    case "$respone" in
+      [yY])
+        bpm -u
+        ;;
+    esac
+  fi
 }
 
 update_pkg () {
   current_package="$(echo "$flag_pkgs" | awk -F '/' '{print $NF}')"
 
-  info_file_outdir="$package/${current_package}_files_info"
-  current_version="$(head -n 1 < "$info_file_outdir")"
+  current_version="$(cat "$package/VERSION")"
 
   find_pkg "$flag_pkgs"
   source_template
@@ -619,14 +618,7 @@ update_pkg () {
   fi
 
   bpm -R "$flag_pkgs" # remove package
-  bpm -d "$flag_pkgs" # reinstall package
-  # remove_pkg
-
-  # prepare_system
-
-  # download_stage_1
-  # download_stage_2
-  # download_stage_3
+  bpm -d "$flag_pkgs" # reinstall package (assumes templates are not removed)
 }
 
 full_update () {
@@ -635,8 +627,7 @@ full_update () {
   for package in "$packages_path"/*; do
     current_package="$(basename "$package")"
 
-    info_file_outdir="$package/${current_package}_files_info"
-    current_version="$(head -n 1 < "$info_file_outdir")"
+    current_version="$(cat "$package/VERSION")"
 
     find_pkg "$current_package"
     source_template
