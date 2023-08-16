@@ -60,9 +60,9 @@ This option used in `Name` parameter allows the template creator not have any ou
 
 Used in files. Used to tell bpm to use full path for users home i.e. {HOME} = /home/\<user\>
 
-### {dep* dep*}
+### {dep*,dep*}
 
-Used in Host_deps. This option allows template builder to make a space seperated list inside curly brackets to make alternative dependecies, if one inside that list is found on system, bpm will consider that dependecy fulfilled.
+Used in Host_deps. This option allows template builder to make a comma seperated list inside curly brackets to make alternative dependecies, if one inside that list is found on system, bpm will consider that dependecy fulfilled.
 
 ## How To Make Templates
 
@@ -140,7 +140,7 @@ Host_deps are dependecies that needs to be installed by the host, due to some sy
 
 This parameter can use {dep* dep*} to specify alternative dependecies to fulfill that requirment.
 
-`Host_deps="awk curl grep mpv {bash dash ash tcsh}"`
+`Host_deps="awk curl grep mpv {bash,dash,ash,tcsh}"`
 
 7. Conflicts
 
