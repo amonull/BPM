@@ -1,14 +1,52 @@
 #!/bin/sh
 
-readonly packages_path="$HOME/.local/share/BPM/pkgs/"
-readonly repos_path="$HOME/.local/share/BPM/repos/"
+init_bpm_paths () {
+  if [ "$system" = 1 ]; then
+    packages_path="/usr/local/share/BPM/"
+    repos_path="/usr/local/share/BPM/"
 
-[ -d "$repos_path" ] || mkdir -p "$repos_path"
+    manpages_path="/usr/share/man/"
+    bash_comp_path="/usr/share/bash-completion/"
+    fish_comp_path="/usr/share/fish/completions/"
+    zsh_comp_path=""
+    desktop_path="/usr/share/applications/"
+    symlink_bin_path="/usr/local/bin/"
+  else
+    packages_path="$HOME/.local/share/BPM/pkgs/"
+    repos_path="$HOME/.local/share/BPM/repos/"
 
-[ -d "$packages_path" ] || mkdir -p "$packages_path"
+    manpages_path="$HOME/.local/share/man/"
+    bash_comp_path="$HOME/.local/share/bash-completion/completions/"
+    fish_comp_path="$HOME/.local/share/fish/generated_completions/"
+    zsh_comp_path=""
+    desktop_path="$HOME/.local/share/applications/"
+    symlink_bin_path="$HOME/.local/bin/"
+  fi
 
-# XXX: this needs to be changed where the template is placed in a way that bpm cannot remove it i.e. installed without bpm
-./src/bpm -r "$(dirname "$(realpath "$0")")/templates" -d bpm
+  [ -d "$packages_path" ] || mkdir -p "$packages_path"
+  [ -d "$repos_path" ] || mkdir -p "$repos_path"
+
+  [ -d "$manpages_path" ] || mkdir -p "$manpages_path"
+  [ -d "$bash_comp_path" ] || mkdir -p "$bash_comp_path"
+  [ -d "$fish_comp_path" ] || mkdir -p "$fish_comp_path"
+  # [ -d "$zsh_comp_path" ] || mkdir -p "$zsh_comp_path" # do not know the path for this so kept empty
+  [ -d "$desktop_path" ] || mkdir -p "$desktop_path"
+  [ -d "$symlink_bin_path" ] || mkdir -p "$symlink_bin_path"
+}
+
+read -r -p "user (bpm) or system (bpm-allow-root) wide installation [U/s]: " response
+case "$response" in
+  [sS])
+    system=1
+    init_bpm_paths
+    ./src/bpm -r "$(dirname "$(realpath "$0")")/templates" -d bpm-allow-root
+    ;;
+  *)
+    system=0
+    init_bpm_paths
+    ./src/bpm -r "$(dirname "$(realpath "$0")")/templates" -d bpm
+    ;;
+esac
 
 if which bpm > /dev/null 2>&1; then
   echo ""
