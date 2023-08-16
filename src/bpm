@@ -26,18 +26,6 @@ packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
 tmp_dir="$(mktemp -d -t BPM.XXXXXXXXXX)/"
 
-# [ flags ]
-verbose=0
-download=0
-update=0
-update_pkg=0
-remove=0
-search=0
-check_updates=0
-ignore_deps=0
-
-flag_pkgs=""
-
 #############################################
 ################## GENERAL ##################
 #############################################
@@ -49,6 +37,28 @@ usage () {
   Options:
     -d, --download
       Download a package
+    -s, --search
+      Search for a package in bpm repos (default /home/<user>/.local/share/BPM/repos/)
+    -R, --remove
+      Remove a package completely
+    -U, --update-pkg
+      Update a specific package
+    -u, --update
+      Update all packages
+    -c, --check-updates
+      Checks for updates
+    -I, --ignore-deps
+      Doesn't check or install dependecies. It is recommended to not use this unless you know it is required
+    -r, --repo
+      changes default repo (/home/<user>/.local/share/BPM/repos/) to user specified
+    -p, --path
+      changes where the binary is symlinked to (default /home/<user>/.local/bin/)
+    -V, --verbose
+      print more information
+    -v, --version
+      print version
+    -h, --help
+      print this screen
   "
 }
 
@@ -333,7 +343,12 @@ download_stage_2 () {
     read -r -p "Run build script above? [y/N]: " response
     case "$response" in
       [yY])
-        sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
+        if sh "$pkg_build"; then
+          print_success "running $pkg_build inside $tmp_dir"
+        else
+          print_err "cannot run $pkg_build inside $tmp_dir"
+        fi
+        # sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
         ;;
       *)
         read -r -p "Not running build script. Exit [Y/n]: " response2
@@ -646,67 +661,70 @@ cd "$tmp_dir" || (print_err "[ERR]: cannot cd into created tmp dir: $tmp_dir"; c
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -d | --download)
-      shift
+    -d|--download)
       download=1
-      flag_pkgs="$*"
       ;;
-    -s | --search)
-      shift
+    -s|--search)
       search=1
-      flag_pkgs="$1"
       ;;
-    -R | --remove)
-      shift
+    -R|--remove)
       remove=1
-      flag_pkgs="$*"
       ;;
-    -U | --update-pkg)
-      shift
+    -U|--update-pkg)
+      if [ $# -lt 2 ]; then
+        print_err "[ERR]: not enough arguments for flag: -U"
+        cleanup
+      fi
       update_pkg=1
-      flag_pkgs="$1"
+      flag_pkgs="$2"
+      shift
       ;;
-    -u | --update)
+    -u|--update)
       update=1
       ;;
-    -c | --check-updates)
+    -c|--check-updates)
       check_updates=1
       ;;
-    -I | --ignore-deps)
+    -I|--ignore-deps)
       ignore_deps=1
       ;;
-    -r | --repo)
+    -r|--repo)
+      if [ $# -lt 2 ]; then
+        print_err "[ERR]: not enough arguments for flag: -r"
+        cleanup
+      fi
+      repos_path="$2"
       shift
-      repos_path="$1"
-      flag_pkgs="$*"
       ;;
-    -p | --path)
+    -p|--path)
+      if [ $# -lt 2 ]; then
+        print_err "[ERR]: not enough arguments for flag: -p"
+        cleanup
+      fi
+      packages_path="$2"
       shift
-      packages_path="$1"
-      flag_pkgs="$*"
       ;;
-    -V | --verbose)
-      shift
+    -V|--verbose)
       verbose=1
       ;;
-    -v | --version)
-      echo $_version
+    -v|--version)
+      echo "$_version"
       cleanup_success
       ;;
-    -h | --help)
+    -h|-\?|--help)
       usage
       cleanup_success
       ;;
     *)
-      echo ""
-      usage
-      cleanup
+      if [ -z "${update_pkg+x}" ]; then
+        flag_pkgs="$flag_pkgs $1"
+      fi
       ;;
   esac
   shift
 done
 
-if [ ! "$download" = 0 ]; then
+if [ -n "${download+x}" ]; then
   for package in $flag_pkgs; do
     find_pkg "$flag_pkgs"
     source_template
@@ -720,7 +738,7 @@ if [ ! "$download" = 0 ]; then
   cleanup_success
 fi
 
-if [ ! "$remove" = 0 ]; then
+if [ -n "${remove+x}" ]; then
   for package in $flag_pkgs; do
     find_pkg "$package"
     source_template
@@ -730,29 +748,34 @@ if [ ! "$remove" = 0 ]; then
   cleanup_success
 fi
 
-if [ ! "$search" = 0 ]; then
-  find "$repos_path" -iname "$flag_pkgs"
+if [ -n "${search+x}" ]; then
+  pkgs="$(find "$repos_path" -iname "$flag_pkgs")"
 
-  cleanup_success
+  if [ -z "$pkgs" ]; then
+    cleanup
+  else
+    cleanup_success
+  fi
 fi
 
-if [ ! "$update" = 0 ]; then
+if [ -n "${update+x}" ]; then
   full_update
 
   cleanup_success
 fi
 
-if [ ! "$update_pkg" = 0 ]; then
+if [ -n "${update_pkg+x}" ]; then
   update_pkg
 
   cleanup_success
 fi
 
-if [ ! "$check_updates" = 0 ]; then
+if [ -n "${check_updates+x}" ]; then
   update_checker
 
   cleanup_success
 fi
 
+print_err "[ERR]: incorrect options supplied"
 usage
 cleanup
