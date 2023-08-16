@@ -1,6 +1,6 @@
 # BPM
 
-BPM used to stand for basic package manager but no longer stands for that as BPM is not a package manager, is a program that is designed to automate and centralize packages that are built from source.
+BPM used to stand for basic package manager but no longer stands for that as BPM is not a package manager, it is instead a program that is designed to automate and centralize packages that are built from source.
 
 This program was built for users that use package managers that do not have all the packages that they want they also do not want to go through the hassle of learning other package managers that either offer far more than just simple package mangment but also have little quirks and features that one would like to avoid.
 

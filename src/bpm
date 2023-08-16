@@ -311,7 +311,7 @@ download_stage_1 () {
     else
       curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
         if echo "$url" | grep -q '\.tar\.gz$'; then
-          # XXX: test this
+          # XXX: add multiple options to unarchive different file types
           tar -C "$tmp_dir" -xzf "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')"
         fi
     fi
