@@ -182,19 +182,19 @@ source_template () {
 
   # in second script | is used instead of / since using / used to give errors but in first | gives errors
   # if echo "$pkg_manpages" | grep -qx "Manpages=\"{TEMPLATE}.*\""; then
-  if [ "$pkg_manpages" ]; then
+  if [ -n "$pkg_manpages" ]; then
     pkg_manpages="$(echo "$pkg_manpages" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")" # i hate regex
     pkg_manpages="$(echo "$pkg_manpages" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   # if echo "$pkg_completion" | grep -qx "Completion=\"{TEMPLATE}.*\""; then
-  if [ "$pkg_completion" ]; then
+  if [ -n "$pkg_completion" ]; then
     pkg_completion="$(echo "$pkg_completion" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")"
     pkg_completion="$(echo "$pkg_completion" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
 
   # if echo "$pkg_desktop" | grep -qx "Desktop=\"{TEMPLATE}.*\""; then
-  if [ "$pkg_desktop" ]; then
+  if [ -n "$pkg_desktop" ]; then
     pkg_desktop="$(echo "$pkg_desktop" | sed '/{TEMPLATE}/ !s|^|'"$tmp_dir|g")"
     pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package_template|g")"
   fi
