@@ -1,3 +1,22 @@
-5,6d4
-< [ "$(id -u)" -eq 0 ] && (echo "bpm must be run as regular user (non-root)"; exit 1)
-< 
+10d9
+< [ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
+14,15c13,14
+< packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
+< repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
+---
+> packages_path="/usr/local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
+> repos_path="/usr/local/share/BPM/repos/" # templates stored here (flag -r changes this location)
+17,19c16,18
+< manpages_path="$HOME/.local/share/man/"
+< bash_comp_path="$HOME/.local/share/bash-completion/completions/"
+< fish_comp_path="$HOME/.local/share/fish/generated_completions/"
+---
+> manpages_path="/usr/share/man/"
+> bash_comp_path="/usr/share/bash-completion/"
+> fish_comp_path="/usr/share/fish/completions/"
+21,22c20,21
+< desktop_path="$HOME/.local/share/applications/"
+< symlink_bin_path="$HOME/.local/bin/"
+---
+> desktop_path="/usr/share/applications/"
+> symlink_bin_path="/usr/local/bin/"

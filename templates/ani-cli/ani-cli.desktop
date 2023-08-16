@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=ani-cli
-Comment=Terminal based anime watching application
-Exec=ani-cli %U
-Icon=ani-cli
-Terminal=true
-Keywords=anime;watching;mpv;downloading;video;
