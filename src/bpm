@@ -195,6 +195,11 @@ source_template () {
     pkg_build="$(readlink "$pkg_build")"
   fi
 
+  if echo "$pkg_version" | grep -qx "{AUTO->.*}"; then
+    command="$(echo "$pkg_version" | awk -F '->' '{print $2}' | head -c -2)"
+    pkg_version="$(eval "$command")"
+  fi
+
   for premission in $pkg_premissions; do
     if echo "$premission" | grep -qx "\{BIN\}>[0-7][0-7][0-7]" > /dev/null 2>&1; then # > /dev/null is needed to avoid stray \ in grep but that stray \ avoids errors
       pkg_bin_premissions="$(echo "$premission" | awk -F '>' '{print $2}')"
@@ -398,18 +403,21 @@ download_stage_3 () {
 
   # [ MANPAGES ]
   for manpage in $pkg_manpages; do
-    ends_with=$(echo "$manpage" | awk -F '.' '{ print $2 }')
+    ends_with=$(basename "$manpage" | awk -F '.' '{ print $2 }')
     end_path="$man_outdir/man$ends_with/"
-    ln_path="$manpages_path/man$ends_with/"
+    ln_path="${manpages_path}man$ends_with/"
+
+    mkdir -p "$end_path"
+    mkdir -p "$ln_path"
 
     # XXX: consider if error checking install should be used like in below
     install -Dm644 "$manpage" "$end_path"
 
     manpage="$(echo "$manpage" | awk -F '/' '{print $NF}')" # done incase $manpage used full path for template
 
-    ln -s "$end_path/$manpage" "$ln_path"
+    ln -s "${end_path}$manpage" "$ln_path"
 
-    echo "$end_path $ln_path/$manpage" >> "$info_file_outdir"
+    echo "${end_path}$manpage ${ln_path}$manpage" >> "$info_file_outdir"
   done
 
   # [ COMPLETION ]
@@ -510,7 +518,9 @@ download_stage_3 () {
   printf "$dirs_to_append_file" >> "$info_file_outdir"
 
   # [ END ]
-  sed -i '$ d' "$info_file_outdir" # removing leftover newline
+  # XXX: below sed cmd causes issues if there were no files or dirs_to_append_file
+
+  # sed -i '$ d' "$info_file_outdir" # removing leftover newline
   # rm -rf "$tmp_dir" # might be useless with cleanup and cleanup_success functions
 }
 

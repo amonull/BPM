@@ -42,13 +42,13 @@ This option will be treated as a command so its name must be equal to the comman
 
 `{sha256sum}d350ee167d41070bf035238ecab43a5e57840fd19e2e2845e35a0280a6b9c631>bpm`
 
-### {AUTO:*}
+### {AUTO->*}
 
 This option can only be used in the `Version` parameter and makes a template auto-updating.
 
 > example usage
 
-`Version="{AUTO:curl -s "https://api.github.com/repos/amonull/BPM/tags}"`
+`Version="{AUTO->curl -s "https://api.github.com/repos/amonull/BPM/tags}"`
 
 usage above shows how tags for releases could be gotten (if they existed for this project. _to be added soon_). Tools like grep, awk, and anything else the user has can also be used to edit the gotten text to get a precise version to compare with currently installed version.
 
@@ -110,11 +110,11 @@ Name parameter is final outputted binary file and the file that gets symlinked t
 
 2. Version
 
-Version parameter is the current version of whatever the package is and is used in checking for updates. [{AUTO:*}](#{AUTO:*}) can be used to get version automatically when checking for updates.
+Version parameter is the current version of whatever the package is and is used in checking for updates. [{AUTO->*}](#{AUTO->*}) can be used to get version automatically when checking for updates.
 
 `Version="0.1"`
 
-`Version="{AUTO:curl some.url/here/file | awk '{print $2}'}"`
+`Version="{AUTO->curl some.url/here/file | awk '{print $2}'}"`
 
 3. Revision
 
