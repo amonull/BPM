@@ -312,7 +312,7 @@ download_stage_1 () {
       curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
         if echo "$url" | grep -q '\.tar\.gz$'; then
           # XXX: add multiple options to unarchive different file types
-          tar -C "$tmp_dir" -xzf "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')"
+          tar -C "$tmp_dir" -xzf "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't un-tar file: $tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')"; cleanup)
         fi
     fi
   done
@@ -341,7 +341,9 @@ download_stage_2 () {
   # [ BUILDING ]
   if [ -f "$pkg_build" ]; then
     echo ""
+    print_info "<--- [INFO]: BUILD SCRIPT START --->"
     cat "$pkg_build"
+    print_info "<--- [INFO]: BUILD SCRIPT END --->"
     echo ""
 
     read -r -p "Run build script above? [y/N]: " response
