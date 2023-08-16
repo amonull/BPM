@@ -64,6 +64,12 @@ Used in files. Used to tell bpm to use full path for users home i.e. {HOME} = /h
 
 Used in Host_deps. This option allows template builder to make a comma seperated list inside curly brackets to make alternative dependecies, if one inside that list is found on system, bpm will consider that dependecy fulfilled.
 
+### {VERSION}
+
+Used in URL. This option allows a program to use Version variable inside the url so instead of `url.{VERSION}.tar.gz` it would display `url.1.0.tar.gz`
+
+`URL="https://github.com/<user>/<package>/tag/v{VERSION}"`
+
 ## How To Make Templates
 
 There are three total sections in making a complete template with most being completely optional and avoidable, a fully functional template can be created using only one of three total sections.
@@ -126,7 +132,7 @@ Revision is used to still give update notifications even if the package is the s
 
 URL is a space seperated string that holds all urls that should be downloaded into `/tmp/BPM.XXXXXXXXX/`
 
-`URL="some.url/1 some.url/2 some.other.url/1"`
+`URL="some.url/1 some.url/2 some.other.url/1 another.url.v{VERSION}/download.tar.gz"`
 
 5. BPM_deps
 

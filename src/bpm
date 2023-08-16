@@ -193,6 +193,10 @@ source_template () {
     pkg_desktop="$(echo "$pkg_desktop" | sed "s|{TEMPLATE}|$path_to_package|g")"
   fi
 
+  if [ -n "$pkg_URL" ]; then
+    pkg_URL="$(echo "$pkg_URL" | sed "s|{VERSION}|$pkg_version|g")"
+  fi
+
   if echo "$pkg_version" | grep -qx "{AUTO->.*}"; then
     command="$(echo "$pkg_version" | awk -F '->' '{print $2}' | head -c -2)"
     pkg_version="$(eval "$command")"
