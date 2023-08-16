@@ -520,9 +520,9 @@ download_stage_3 () {
   printf "$dirs_to_append_file" >> "$info_file_outdir"
 
   # [ END ]
-  # XXX: below sed cmd causes issues if there were no files or dirs_to_append_file
-
-  # sed -i '$ d' "$info_file_outdir" # removing leftover newline
+  if [ -n "$dirs_to_append_file" ]; then
+    sed -i '$ d' "$info_file_outdir" # removing leftover newline
+  fi
   # rm -rf "$tmp_dir" # might be useless with cleanup and cleanup_success functions
 }
 
