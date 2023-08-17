@@ -53,6 +53,10 @@ usage () {
       changes default repo (/home/<user>/.local/share/BPM/repos/) to user specified
     -p, --path
       changes where the binary is symlinked to (default /home/<user>/.local/bin/)
+    -l, --list-installed
+      lists all installed packages with their version
+    -L, --list-avaliable
+      lists all avaliable packages with their version
     -V, --verbose
       print more information
     -v, --version
@@ -148,6 +152,11 @@ source_template () {
   flush_vars
   
   if [ ! -f "$path_to_package_template" ]; then
+    if [ -n "${list_avliable+x}" ]; then
+      pkg_version="NO"
+      pkg_revision="TEMPLATE"
+      return
+    fi
     print_err "[ERR]: package not found"
     cleanup
   fi
@@ -744,6 +753,12 @@ while [ $# -gt 0 ]; do
       packages_path="$2"
       shift
       ;;
+    -l|--list-installed)
+      list_installed=1
+      ;;
+    -L|--list-avaliable)
+      list_avliable=1
+      ;;
     -V|--verbose)
       verbose=1
       ;;
@@ -790,7 +805,7 @@ if [ -n "${remove+x}" ]; then
 fi
 
 if [ -n "${search+x}" ]; then
-  find "$repos_path" -maxdepth 2 -type d -iname "$flag_pkgs" -exec echo {} \;
+  find "$repos_path" -maxdepth 2 -type d -iname "$flag_pkgs*" -exec echo {} \;
 
   cleanup_success
 fi
@@ -824,6 +839,24 @@ if [ -n "${redownload+x}" ]; then
     bpm -R "$package" # remove package
     bpm -d "$package" # reinstall package (cannot update bpm)
   done
+fi
+
+if [ -n "${list_installed+x}" ]; then
+  for package in "$packages_path"*; do
+    echo "$(basename "$package")_v$(cat "$package/VERSION")"
+  done
+
+  cleanup_success
+fi
+
+if [ -n "${list_avliable+x}" ]; then
+  for package in "$repos_path"*; do
+    path_to_package_template="$package/Template"
+    source_template
+    echo "$(basename "$package")_v${pkg_version}_${pkg_revision}"
+  done
+
+  cleanup_success
 fi
 
 print_err "[ERR]: incorrect options supplied"
