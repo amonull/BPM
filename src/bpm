@@ -118,6 +118,10 @@ print_success () {
   printf '%b' "${green}$*${normal}\n"
 }
 
+ask () {
+  printf "$*"
+  read -r response
+}
 
 #############################################
 ################ PREPERATION ################
@@ -298,8 +302,7 @@ prepare_system () {
       for dep in $not_installed_bpm_deps; do
         echo "  $dep"
       done
-      printf "install those dependecies? [y/N]: "
-      read -r response
+      ask "install those dependecies? [y/N]: "
       case "$response" in
         [yY])
           for install_dep in $not_installed_bpm_deps; do
@@ -365,8 +368,7 @@ download_stage_2 () {
     cat "$pkg_build"
     print_info "<--- [INFO]: BUILD SCRIPT END --->\n"
 
-    printf "Run build script above? [y/N]: "
-    read -r  response
+    ask "Run build script above? [y/N]: "
     case "$response" in
       [yY])
         if sh "$pkg_build"; then
@@ -377,8 +379,7 @@ download_stage_2 () {
         # sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
         ;;
       *)
-        printf "Not running build script. Exit [Y/n]: "
-        read -r response
+        ask "Not running build script. Exit [Y/n]: "
         case "$response" in
           [nN])
             print_info "[INFO]: $pkg_build didn't run.\nskipping checksums to avoid errors..."
@@ -520,8 +521,7 @@ download_stage_3 () {
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
 
-    printf "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
-    read -r response
+    ask "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
     case "$response" in
       [yY])
         if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
@@ -564,8 +564,7 @@ remove_pkg () {
   if [ "$pkg_bpm_deps" ]; then
     print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
-      printf "Remove $bpm_dep? [y/N]: "
-      read -r respone
+      ask "Remove $bpm_dep? [y/N]: "
       case "$respone" in
         [yY])
           bpm -R "$bpm_dep"
