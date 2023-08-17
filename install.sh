@@ -8,7 +8,7 @@ init_bpm_paths () {
     manpages_path="/usr/share/man/"
     bash_comp_path="/usr/share/bash-completion/"
     fish_comp_path="/usr/share/fish/completions/"
-    zsh_comp_path=""
+    zsh_comp_path="/usr/share/zsh/vendor-completions"
     desktop_path="/usr/share/applications/"
     symlink_bin_path="/usr/local/bin/"
   else
@@ -18,7 +18,7 @@ init_bpm_paths () {
     manpages_path="$HOME/.local/share/man/"
     bash_comp_path="$HOME/.local/share/bash-completion/completions/"
     fish_comp_path="$HOME/.local/share/fish/generated_completions/"
-    zsh_comp_path=""
+    zsh_comp_path="$HOME~/.local/share/zsh/vendor-completions/"
     desktop_path="$HOME/.local/share/applications/"
     symlink_bin_path="$HOME/.local/bin/"
   fi
@@ -29,7 +29,7 @@ init_bpm_paths () {
   [ -d "$manpages_path" ] || mkdir -p "$manpages_path"
   [ -d "$bash_comp_path" ] || mkdir -p "$bash_comp_path"
   [ -d "$fish_comp_path" ] || mkdir -p "$fish_comp_path"
-  # [ -d "$zsh_comp_path" ] || mkdir -p "$zsh_comp_path" # do not know the path for this so kept empty
+  [ -d "$zsh_comp_path" ] || mkdir -p "$zsh_comp_path" # do not know the path for this so kept empty
   [ -d "$desktop_path" ] || mkdir -p "$desktop_path"
   [ -d "$symlink_bin_path" ] || mkdir -p "$symlink_bin_path"
 }
