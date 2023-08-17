@@ -253,7 +253,7 @@ prepare_system () {
 
   if [ ! "$ignore_deps" ]; then
     for host_dep in $pkg_host_deps; do
-      if [ -n "$(echo "$host_dep" | grep -x "{.*}")" ]; then
+      if echo "$host_dep" | grep -qx "{.*}"; then
         host_dep="$(echo "$host_dep" | tr -d '{}' | tr ',' ' ')"
         for alt_host_deps in $host_dep; do
           # XXX: currently checking this way is incorrect. fix this
@@ -298,7 +298,7 @@ prepare_system () {
       for dep in $not_installed_bpm_deps; do
         echo "  $dep"
       done
-      read -r -p "install those dependecies? [y/N]: " response
+      read -r "install those dependecies? [y/N]: " response
       case "$response" in
         [yY])
           for install_dep in $not_installed_bpm_deps; do
@@ -366,7 +366,7 @@ download_stage_2 () {
     print_info "<--- [INFO]: BUILD SCRIPT END --->"
     echo ""
 
-    read -r -p "Run build script above? [y/N]: " response
+    read -r "Run build script above? [y/N]: " response
     case "$response" in
       [yY])
         if sh "$pkg_build"; then
@@ -377,7 +377,7 @@ download_stage_2 () {
         # sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
         ;;
       *)
-        read -r -p "Not running build script. Exit [Y/n]: " response2
+        read -r "Not running build script. Exit [Y/n]: " response2
         case "$response2" in
           [nN])
             print_info "[INFO]: $pkg_build didn't run.\nskipping checksums to avoid errors..."
@@ -519,7 +519,7 @@ download_stage_3 () {
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
 
-    read -r -p "move file: $tmp_dir$file_loc into $new_loc? [y/N]: " response
+    read -r "move file: $tmp_dir$file_loc into $new_loc? [y/N]: " response
     case "$response" in
       [yY])
         if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
@@ -562,7 +562,7 @@ remove_pkg () {
   if [ "$pkg_bpm_deps" ]; then
     print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
-      read -r -p "Remove $bpm_dep? [y/N]: " respone
+      read -r "Remove $bpm_dep? [y/N]: " respone
       case "$respone" in
         [yY])
           bpm -R "$bpm_dep"
