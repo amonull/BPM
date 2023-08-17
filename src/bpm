@@ -628,13 +628,6 @@ update_checker () {
     for package in $needs_update; do
       echo "  $package"
     done
-
-    read -r -p "Update all now? [y/N]: " respone
-    case "$respone" in
-      [yY])
-        bpm -u
-        ;;
-    esac
   fi
 }
 
