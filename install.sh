@@ -18,7 +18,7 @@ init_bpm_paths () {
     manpages_path="$HOME/.local/share/man/"
     bash_comp_path="$HOME/.local/share/bash-completion/completions/"
     fish_comp_path="$HOME/.local/share/fish/generated_completions/"
-    zsh_comp_path="$HOME~/.local/share/zsh/vendor-completions/"
+    zsh_comp_path="$HOME/.local/share/zsh/vendor-completions/"
     desktop_path="$HOME/.local/share/applications/"
     symlink_bin_path="$HOME/.local/bin/"
   fi
