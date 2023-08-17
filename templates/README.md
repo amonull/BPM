@@ -66,9 +66,11 @@ Used in Host_deps. This option allows template builder to make a comma seperated
 
 ### {VERSION}
 
-Used in URL. This option allows a program to use Version variable inside the url so instead of `url.{VERSION}.tar.gz` it would display `url.1.0.tar.gz`
+Used in URL and Name. This option allows a program to use Version variable inside the url so instead of `url.{VERSION}.tar.gz` it would display `url.1.0.tar.gz`
 
 `URL="https://github.com/<user>/<package>/tag/v{VERSION}"`
+
+`Name="pkg-{VERSION}.AppImage"`
 
 ## How To Make Templates
 

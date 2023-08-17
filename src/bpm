@@ -196,10 +196,15 @@ source_template () {
   if echo "$pkg_version" | grep -qx "{AUTO->.*}"; then
     command="$(echo "$pkg_version" | awk -F '->' '{print $2}' | head -c -2)"
     pkg_version="$(eval "$command")"
+    pkg_version="$(echo "$pkg_version" | tr -d ' ')"
   fi
 
   if [ -n "$pkg_URL" ]; then
-    pkg_URL="$(echo "$pkg_URL" | sed "s|{VERSION}|$pkg_version|g" | tr -d ' ')"
+    pkg_URL="$(echo "$pkg_URL" | sed "s|{VERSION}|$pkg_version|g")"
+  fi
+
+  if [ -n "$pkg_name" ]; then
+    pkg_name="$(echo "$pkg_name" | sed "s|{VERSION}|$pkg_version|g")"
   fi
 
   if [ -L "$pkg_build" ]; then
@@ -314,10 +319,11 @@ download_stage_1 () {
       git clone "$url" "$tmp_dir" || (print_err "[ERR]: couldn't clone git repo: $url into $tmp_dir"; cleanup)
     else
       if echo "$url" | grep -q '\.tar\.gz$'; then
+        # -L is needed to download files as with their contents
         # XXX: add multiple options to unarchive different file types
         curl -L "$url" | tar xz -C "$tmp_dir" || (print_err "[ERR]: couldn't curl and unpack url: $url")
       else
-        curl "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
+        curl -L "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
       fi
     fi
   done
@@ -472,14 +478,15 @@ download_stage_3 () {
     # echo "" >> "$bin_outdir/$pkg_name"
     # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
-    if install -Dm"$pkg_bin_premissions" "$tmp_dir$pkg_name" "$bin_outdir/$pkg_name"; then
-      ln -s "$bin_outdir/$pkg_name" "$symlink_bin_path"
-      echo "$bin_outdir/$pkg_name $symlink_bin_path$pkg_name" >> "$info_file_outdir"
+    true_name="$(echo "$pkg_name" | awk -F '{' '{print $1}' | tr -d '}')"
+    if install -Dm"$pkg_bin_premissions" "$tmp_dir$true_name" "$bin_outdir/$true_name"; then
+      ln -s "$bin_outdir/$true_name" "$symlink_bin_path"
+      echo "$bin_outdir/$true_name $symlink_bin_path$true_name" >> "$info_file_outdir"
       # [ second name check ]
       if echo "$pkg_name" | grep -q '{.*}'; then
         alt_name="$(echo "$pkg_name" | awk -F '{' '{print $2}' | tr -d '}')"
-        ln -s "$bin_outdir/$pkg_name" "$symlink_bin_path$alt_name"
-        echo "$bin_outdir/$pkg_name $symlink_bin_path$alt_name" >> "$info_file_outdir"
+        ln -s "$bin_outdir/$true_name" "$symlink_bin_path$alt_name"
+        echo "$bin_outdir/$true_name $symlink_bin_path$alt_name" >> "$info_file_outdir"
       fi
     else
       print_err "[ERR]: parameter Name is not {NONE} and $pkg_name does not exists in $tmp_dir"
@@ -538,8 +545,8 @@ download_stage_3 () {
 #############################################
 
 remove_pkg () {
-  outdir="$packages_path$pkg_name/"
-  info_file_outdir="$outdir$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
+  outdir="${packages_path}$(basename "$path_to_package")"
+  info_file_outdir="$outdir/$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
 
   # [ removing deps ]
   if [ "$pkg_bpm_deps" ]; then
