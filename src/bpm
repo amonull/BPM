@@ -17,7 +17,7 @@ repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r chan
 manpages_path="$HOME/.local/share/man/"
 bash_comp_path="$HOME/.local/share/bash-completion/completions/"
 fish_comp_path="$HOME/.local/share/fish/generated_completions/"
-zsh_comp_path=""
+zsh_comp_path="$HOME/.local/share/zsh/vendor-completions/"
 desktop_path="$HOME/.local/share/applications/"
 symlink_bin_path="$HOME/.local/bin/"
 
@@ -450,8 +450,9 @@ download_stage_3 () {
         echo "$completion_end_path $bash_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.zsh)
-        echo TODO
-        echo $zsh_comp_path
+        install -Dm644 "$completion" "$completion_end_path"
+        ln -s "$completion_end_path" "$zsh_comp_path"
+        echo "$completion_end_path $zsh_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *)
         ;;
