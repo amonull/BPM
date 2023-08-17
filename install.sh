@@ -34,7 +34,8 @@ init_bpm_paths () {
   [ -d "$symlink_bin_path" ] || mkdir -p "$symlink_bin_path"
 }
 
-read -r -p "user (bpm) or system (bpm-allow-root) wide installation [U/s]: " response
+printf "user (bpm) or system (bpm-allow-root) wide installation [U/s]: "
+read -r response
 case "$response" in
   [sS])
     system=1

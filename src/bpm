@@ -298,7 +298,7 @@ prepare_system () {
       for dep in $not_installed_bpm_deps; do
         echo "  $dep"
       done
-      echo "install those dependecies? [y/N]: "
+      printf "install those dependecies? [y/N]: "
       read -r response
       case "$response" in
         [yY])
@@ -361,13 +361,11 @@ download_stage_2 () {
 
   # [ BUILDING ]
   if [ -f "$pkg_build" ]; then
-    echo ""
-    print_info "<--- [INFO]: BUILD SCRIPT START --->"
+    print_info "\n<--- [INFO]: BUILD SCRIPT START --->"
     cat "$pkg_build"
-    print_info "<--- [INFO]: BUILD SCRIPT END --->"
-    echo ""
+    print_info "<--- [INFO]: BUILD SCRIPT END --->\n"
 
-    echo "Run build script above? [y/N]: "
+    printf "Run build script above? [y/N]: "
     read -r  response
     case "$response" in
       [yY])
@@ -379,7 +377,7 @@ download_stage_2 () {
         # sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
         ;;
       *)
-        echo "Not running build script. Exit [Y/n]: "
+        printf "Not running build script. Exit [Y/n]: "
         read -r response
         case "$response" in
           [nN])
@@ -522,7 +520,7 @@ download_stage_3 () {
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
 
-    echo "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
+    printf "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
     read -r response
     case "$response" in
       [yY])
@@ -566,7 +564,7 @@ remove_pkg () {
   if [ "$pkg_bpm_deps" ]; then
     print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
-      echo "Remove $bpm_dep? [y/N]: "
+      printf "Remove $bpm_dep? [y/N]: "
       read -r respone
       case "$respone" in
         [yY])
