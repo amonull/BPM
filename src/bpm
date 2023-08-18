@@ -9,7 +9,7 @@ blue="\033[0;94m"
 
 [ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
 
-readonly _version="1.0"
+readonly _version="1.0.0"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
