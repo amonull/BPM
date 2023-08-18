@@ -9,7 +9,7 @@ blue="\033[0;94m"
 
 [ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
 
-readonly _version="1.0.0"
+readonly _version="1.1.0"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
@@ -35,7 +35,7 @@ usage () {
       Download a package
     -s, --search
       Search for a package in bpm repos (default /home/<user>/.local/share/BPM/repos/)
-    -R, --remove
+    -r, --remove
       Remove a package completely
     -U, --update-pkg
       Update a specific package
@@ -49,7 +49,7 @@ usage () {
       Redownloads a package after uninstalling it
     -I, --ignore-deps
       Doesn't check or install dependecies. It is recommended to not use this unless you know it is required
-    -r, --repo
+    -R, --repo
       changes default repo (/home/<user>/.local/share/BPM/repos/) to user specified
     -p, --path
       changes where the binary is symlinked to (default /home/<user>/.local/bin/)
@@ -567,7 +567,7 @@ remove_pkg () {
       ask "Remove $bpm_dep? [y/N]: "
       case "$respone" in
         [yY])
-          bpm -R "$bpm_dep"
+          bpm -r "$bpm_dep"
           ;;
         *)
           print_info "[INFO]: not removing $bpm_dep"
@@ -646,7 +646,7 @@ update_pkg () {
     cleanup_success
   fi
 
-  bpm -R "$flag_pkgs" # remove package
+  bpm -r "$flag_pkgs" # remove package
   bpm -d "$flag_pkgs" # reinstall package (cannot update bpm)
 }
 
@@ -681,7 +681,7 @@ full_update () {
 }
 
 self_update () {
-  bpm -R bpm
+  bpm -r bpm
 
   git clone https://github.com/amonull/BPM.git "$tmp_dir"
 
@@ -831,7 +831,7 @@ fi
 
 if [ -n "${redownload+x}" ]; then
   for package in $flag_pkgs; do
-    bpm -R "$package" # remove package
+    bpm -r "$package" # remove package
     bpm -d "$package" # reinstall package (cannot update bpm)
   done
 fi
