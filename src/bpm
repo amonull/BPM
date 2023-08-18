@@ -9,7 +9,7 @@ blue="\033[0;94m"
 
 [ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
 
-readonly _version="1.1.0"
+readonly _version="1.1.1"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
@@ -705,7 +705,7 @@ while [ $# -gt 0 ]; do
     -s|--search)
       search=1
       ;;
-    -R|--remove)
+    -r|--remove)
       remove=1
       ;;
     -U|--update-pkg)
@@ -732,7 +732,7 @@ while [ $# -gt 0 ]; do
     -I|--ignore-deps)
       ignore_deps=1
       ;;
-    -r|--repo)
+    -R|--repo)
       if [ $# -lt 2 ]; then
         print_err "[ERR]: not enough arguments for flag: -r"
         cleanup
