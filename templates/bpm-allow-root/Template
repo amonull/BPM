@@ -1,5 +1,5 @@
 Name="bpm-allow-root{bpm}"
-Version="1.0"
+Version="{AUTO->curl -s "https://github.com/amonull/BPM/tags" | grep "Link--primary Link" | awk -F '</a>' '{print $1}' | awk -F '>' '{print $NF}' | tr -d 'v' | head -n 1}"
 Revision="1"
 URL="https://github.com/amonull/BPM.git"
 
