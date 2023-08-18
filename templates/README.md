@@ -10,9 +10,11 @@ These options alter the pre-determined paths used to add special agnostic values
 
 > Inside Files
 
-Using `{BIN}` inside files assumes a copy of the current binary should be made so using `Files="{BIN}>$HOME/.local/bin/bpm"` like done in `bpm-allow-root` allows the current binary mentioned as `{BIN}` to also be installed as `bpm` into `$HOME/.local/bin/`.
+Using `{BIN}` inside files assumes a copy of the current binary should be made so using `Files="{BIN}>{HOME}/.local/share/libexec/bpm"` allows the current binary mentioned as `{BIN}` to also be installed as `bpm` into `$HOME/.local/share/libexec/`.
 
 It is recommended to use full paths in files after the arrow (`>`) not doing so may result in unexpected and unwanted behaviour.
+
+It is also recommended to not use `{BIN}>{HOME}/.local/bin/<pks_name>` and to instead just use [{ALT_NAME}](#ALT_NAME)
 
 > Inside Premissions
 
@@ -50,7 +52,7 @@ This option can only be used in the `Version` parameter and makes a template aut
 
 `Version="{AUTO->curl -s "https://api.github.com/repos/amonull/BPM/tags}"`
 
-usage above shows how tags for releases could be gotten (if they existed for this project. _to be added soon_). Tools like grep, awk, and anything else the user has can also be used to edit the gotten text to get a precise version to compare with currently installed version.
+usage above shows how tags for releases could be gotten. Tools like grep, awk, and anything else the user has can also be used to edit the gotten text to get a precise version to compare with currently installed version.
 
 ### {NONE}
 
@@ -71,6 +73,12 @@ Used in URL and Name. This option allows a program to use Version variable insid
 `URL="https://github.com/<user>/<package>/tag/v{VERSION}"`
 
 `Name="pkg-{VERSION}.AppImage"`
+
+### {ALT_NAME}
+
+Used in Name this option allows for an alternative name to be used that can be symlinked to the same `$HOME/.local/bin/` or packages_path set with -p flag
+
+`Name="bpm{bpm-allow-root}"`
 
 ## How To Make Templates
 
