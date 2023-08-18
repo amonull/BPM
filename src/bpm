@@ -516,7 +516,7 @@ download_stage_3 () {
       file_loc="$(echo "$file" | awk -F '>' '{ print $1 }' )"
     fi
     new_loc="$(echo "$file" | awk -F '>' '{ print $2 }' | sed "s|{HOME}|$HOME|g" )"
-    local_loc="$files_outdir/$(basename "$new_loc")"
+    local_loc="$files_outdir/$new_loc"
     file_name="$(basename "$file_loc")"
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
