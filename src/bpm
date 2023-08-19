@@ -126,8 +126,14 @@ print_success () {
 }
 
 ask () {
-  printf "$*"
-  read -r response
+  if [ -n "${auto_no+x}" ]; then
+    response="n"
+  elif [ -n "${auto_yes+x}" ]; then
+    response="y"
+  else
+    printf "$*"
+    read -r response
+  fi
 }
 
 #############################################
@@ -315,14 +321,7 @@ prepare_system () {
         echo "  $dep"
       done
 
-      if [ -n "${auto_no+x}" ]; then
-        response="n"
-      elif [ -n "${auto_yes+x}" ]; then
-        response="y"
-      else
-        ask "install those dependecies? [y/N]: "
-      fi
-
+      ask "install those dependecies? [y/N]: "
       case "$response" in
         [yY])
           for install_dep in $not_installed_bpm_deps; do
@@ -393,14 +392,7 @@ download_stage_2 () {
     cat "$pkg_build"
     print_info "<--- [INFO]: BUILD SCRIPT END --->\n"
 
-    if [ -n "${auto_no+x}" ]; then
-      response="n"
-    elif [ -n "${auto_yes+x}" ]; then
-      response="y"
-    else
-      ask "Run build script above? [y/N]: "
-    fi
-
+    ask "Run build script above? [y/N]: "
     case "$response" in
       [yY])
         if sh "$pkg_build"; then
@@ -579,14 +571,7 @@ download_stage_3 () {
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
 
-    if [ -n "${auto_no+x}" ]; then
-      response="n"
-    elif [ -n "${auto_yes+x}" ]; then
-      response="y"
-    else
-      ask "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
-    fi
-
+    ask "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
     case "$response" in
       [yY])
         [ -n "${verbose+x}" ] && print_info "[INFO]: moving file $file_name with premissions $file_premission"
@@ -632,14 +617,7 @@ remove_pkg () {
   if [ "$pkg_bpm_deps" ]; then
     print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
-      if [ -n "${auto_no+x}" ]; then
-        response="n"
-      elif [ -n "${auto_yes+x}" ]; then
-        response="y"
-      else
-        ask "Remove $bpm_dep? [y/N]: "
-      fi
-
+      ask "Remove $bpm_dep? [y/N]: "
       case "$response" in
         [yY])
           bpm -r "$bpm_dep"
