@@ -7,7 +7,10 @@ yellow="\033[0;93m"
 green="\033[0;92m"
 blue="\033[0;94m"
 
-[ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
+if [ "$(id -u)" -eq 0 ]; then
+  printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"
+  exit 1
+fi
 
 readonly _version="1.1.5"
 
