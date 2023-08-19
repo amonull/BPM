@@ -160,7 +160,7 @@ source_template () {
   flush_vars
   
   if [ ! -f "$path_to_package_template" ]; then
-    if [ -n "${list_avliable+x}" ]; then
+    if [ -n "${list_avaliable+x}" ]; then
       pkg_version="NO"
       pkg_revision="TEMPLATE"
       return
@@ -244,6 +244,7 @@ prepare_system () {
   not_installed_host_alternative_deps=""
   not_installed_bpm_deps=""
 
+  [ -n "${verbose+x}" ] && print_info "[INFO]: Checking for conflicts..."
   for conflict in $pkg_conflicts; do
     if [ -n "$(whereis -bs "$conflict" | awk -F ':' '{print $NF}')" ]; then
       found_conflicts="$found_conflicts $conflict"
@@ -260,6 +261,8 @@ prepare_system () {
   fi
 
   if [ ! "$ignore_deps" ]; then
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Checking for host deps..."
+
     for host_dep in $pkg_host_deps; do
       if echo "$host_dep" | grep -qx "{.*}"; then
         host_dep="$(echo "$host_dep" | tr -d '{}' | tr ',' ' ')"
@@ -276,6 +279,8 @@ prepare_system () {
         fi
       fi
     done
+
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Checking for BPM deps..."
 
     for bpm_dep in $pkg_bpm_deps; do
       if [ -z "$(whereis -bs "$bpm_dep" | awk -F ':' '{print $NF}')" ]; then
@@ -341,13 +346,16 @@ download_stage_1 () {
 
   for url in $pkg_URL; do
     if echo "$url" | grep -q '\.git$' ; then
+      [ -n "${verbose+x}" ] && print_info "[INFO]: Cloning git repo $url"
       git clone "$url" "$tmp_dir" || (print_err "[ERR]: couldn't clone git repo: $url into $tmp_dir"; cleanup)
     else
       if echo "$url" | grep -q '\.tar\.gz$'; then
         # -L is needed to download files as with their contents
         # XXX: add multiple options to unarchive different file types
+        [ -n "${verbose+x}" ] && print_info "[INFO]: Downloading url $url and unarchiving it"
         curl -L "$url" | tar xz -C "$tmp_dir" || (print_err "[ERR]: couldn't curl and unpack url: $url")
       else
+        [ -n "${verbose+x}" ] && print_info "[INFO]: Downloading $url"
         curl -L "$url" -o "$tmp_dir$(echo "$url" | awk -F '/' '{ print $NF }')" || (print_err "[ERR]: couldn't curl $url into $tmp_dir"; cleanup)
       fi
     fi
@@ -361,6 +369,8 @@ download_stage_2 () {
   # [ PATCHING ]
   # TODO: needs fix on patches paths due to using git to install as well
   # consider using sub-shells to cd and using < to redirect patches
+  #
+  # XXX: fix this before adding -V, --verbose options here
   if [ -d "$pkg_patches" ]; then
     for path in "$pkg_patches"*; do
       if [ ! -f "$path" ]; then
@@ -426,6 +436,7 @@ download_stage_2 () {
     expected_checksum_result="$(echo "$checksum" | awk -F '>' '{ print $2 }')"
     actual_checksum_result=$($checksum_method "$file_name" || (print_err "[ERR]: error in making checksum file: $file_name"; cleanup))
 
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Checking checksum: $checksum with created checksum $checksum_method on $file_name: $actual_checksum_result"
     if [ ! "$expected_checksum_result" = "$actual_checksum_result" ]; then
       print_err "[ERR]: checksums in file: $file_name do not match"
       print_err "expected: $expected_checksum_result"
@@ -434,6 +445,7 @@ download_stage_2 () {
 
       cleanup
     fi
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Checksum Matched"
   done
 }
 
@@ -450,6 +462,7 @@ download_stage_3 () {
   touch "$info_file_outdir"
 
   # [ VERSION ]
+  [ -n "${verbose+x}" ] && print_info "[INFO]: Writing version to $version_file_outdir"
   echo "${pkg_version}_${pkg_revision}" > "$version_file_outdir"
 
   # [ MANPAGES ]
@@ -460,11 +473,15 @@ download_stage_3 () {
 
     mkdir -p "$end_path" "$ln_path"
 
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Making path $ln_path"
+
     # XXX: consider if error checking install should be used like in below
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Moving $manpage to $end_path with permissions 644"
     install -Dm644 "$manpage" "$end_path"
 
     manpage="$(echo "$manpage" | awk -F '/' '{print $NF}')" # done incase $manpage used full path for template
 
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Linking ${end_path}$manpage to $ln_path"
     ln -s "${end_path}$manpage" "$ln_path"
 
     echo "${end_path}$manpage ${ln_path}$manpage" >> "$info_file_outdir"
@@ -476,16 +493,19 @@ download_stage_3 () {
     case $completion in
       *.fish)
         # XXX: consider if error checking install should be used like in below
+        [ -n "${verbose+x}" ] && print_info "[INFO]: Fish completion found\nMoving $completion to $completion_end_path with permissions 644\nLinking $completion_end_path to $fish_comp_path"
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$fish_comp_path"
         echo "$completion_end_path $fish_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.bash)
+        [ -n "${verbose+x}" ] && print_info "[INFO]: Bash completion found\nMoving $completion to $completion_end_path with permissions 644\nLinking $completion_end_path to $bash_comp_path"
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$bash_comp_path"
         echo "$completion_end_path $bash_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
         ;;
       *.zsh)
+        [ -n "${verbose+x}" ] && print_info "[INFO]: ZSH completion found\nMoving $completion to $completion_end_path with permissions 644\nLinking $completion_end_path to $zsh_comp_path"
         install -Dm644 "$completion" "$completion_end_path"
         ln -s "$completion_end_path" "$zsh_comp_path"
         echo "$completion_end_path $zsh_comp_path$(basename "$completion_end_path")" >> "$info_file_outdir"
@@ -497,13 +517,17 @@ download_stage_3 () {
 
   # [ DESKTOP ]
   desktop_end_path="$desktop_outdir/$(basename "$pkg_desktop")"
+
   if install -Dm644 "$pkg_desktop" "$desktop_end_path" 2> /dev/null; then
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Desktop file found...\n[INFO]: Moving $pkg_desktop to $desktop_end_path with permissions 644\n[INFO]: Linking $desktop_end_path to $desktop_path"
     ln -s "$desktop_end_path" "$desktop_path"
     echo "$desktop_end_path $desktop_path$(basename "$desktop_end_path")" >> "$info_file_outdir"
   fi
 
   # [ BIN ]
   if [ "$pkg_name" = "{NONE}" ]; then
+
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Package name set as {NONE}. No binary to install..."
     pkg_name="$(basename "$path_to_package")"
 
     { echo "$pkg_name" ; echo "${pkg_version}_${pkg_revision}" ; echo "" ; echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." ; } > "$bin_outdir/$pkg_name"
@@ -516,12 +540,18 @@ download_stage_3 () {
     # echo "This package has no official binary. Check $info_file_outdir for more information on what was installed where." >> "$bin_outdir/$pkg_name"
   else
     true_name="$(echo "$pkg_name" | awk -F '{' '{print $1}' | tr -d '}')"
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Moving $true_name to $bin_outdir with premissions $pkg_bin_premissions"
     if install -Dm"$pkg_bin_premissions" "$tmp_dir$true_name" "$bin_outdir/$true_name"; then
+
+      [ -n "${verbose+x}" ] && print_info "[INFO]: Linking $bin_outdir/$true_name to $symlink_bin_path"
       ln -s "$bin_outdir/$true_name" "$symlink_bin_path"
       echo "$bin_outdir/$true_name $symlink_bin_path$true_name" >> "$info_file_outdir"
       # [ second name check ]
+      [ -n "${verbose+x}" ] && print_info "[INFO]: Checking for alternative names"
       if echo "$pkg_name" | grep -q '{.*}'; then
         alt_name="$(echo "$pkg_name" | awk -F '{' '{print $2}' | tr -d '}')"
+
+        [ -n "${verbose+x}" ] && print_info "[INFO]: Linking $bin_outdir/$true_name to $symlink_bin_path/$alt_name"
         ln -s "$bin_outdir/$true_name" "$symlink_bin_path$alt_name"
         echo "$bin_outdir/$true_name $symlink_bin_path$alt_name" >> "$info_file_outdir"
       fi
@@ -556,12 +586,16 @@ download_stage_3 () {
 
     case "$response" in
       [yY])
+        [ -n "${verbose+x}" ] && print_info "[INFO]: moving file $file_name with premissions $file_premission"
+
         if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
           dirs_created="$(mkdir -vp "$(dirname "$new_loc")")"
+          [ -n "${verbose+x}" ] && print_info "[INFO]: Making dirs $dirs_created"
           dirs_created_pretty="$(echo "$dirs_created" | awk -F "'" '{print $2}')"
 
           dirs_to_append_file="$dirs_to_append_file$dirs_created_pretty\n"
 
+          [ -n "${verbose+x}" ] && print_info "[INFO]: Linking $local_loc to $new_loc"
           ln -s "$local_loc" "$new_loc"
           echo "$local_loc $new_loc" >> "$info_file_outdir"
         else
@@ -591,6 +625,7 @@ remove_pkg () {
   info_file_outdir="$outdir/$(basename "$path_to_package")_files_info" # simple txt file holding relative paths and where they are linked to i.e: man/man1/man.1  home/<user>/.local/share/man/man1/man.1
 
   # [ removing deps ]
+  [ -n "${verbose+x}" ] && print_info "[INFO]: Checking for BPM deps"
   if [ "$pkg_bpm_deps" ]; then
     print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
@@ -613,6 +648,7 @@ remove_pkg () {
     done
   fi
 
+  [ -n "${verbose+x}" ] && print_info "[INFO]: Checking for host deps"
   if [ "$pkg_host_deps" ]; then
     print_info "[INFO]: Found installed host deps: "
     for host_dep in $pkg_host_deps; do
@@ -621,15 +657,18 @@ remove_pkg () {
   fi
   
   # [ removing symlinks and installed files ]
+  [ -n "${verbose+x}" ] && print_info "[INFO]: reading $info_file_outdir"
   while read -r path; do
     dir_path="$(echo "$path" | awk '{print $1}')"
     symlink_path="$(echo "$path" | awk '{print $2}')"
 
     if [ "$symlink_path" ]; then
+      [ -n "${verbose+x}" ] && print_info "[INFO]: Attempting unlinking $symlink_path"
       if ! unlink "$symlink_path"; then
         print_err "[ERR]: couldn't unlink path: $symlink_path"
       fi
     elif [ "$dir_path" ]; then
+      [ -n "${verbose+x}" ] && print_info "[INFO]: Attempting removing $dir_path"
       if ! rm -rf "$dir_path"; then
         print_err "[ERR]: couldn't remove dir: $dir_path"
       fi
@@ -638,6 +677,7 @@ remove_pkg () {
     fi
   done < "$info_file_outdir"
 
+  [ -n "${verbose+x}" ] && print_info "[INFO]: Removing $outdir"
   rm -rf "$outdir"
 }
 
@@ -709,6 +749,8 @@ full_update () {
   done
 
   for package in $needs_update; do
+    [ -n "${verbose+x}" ] && print_info "[INFO]: updating $package"
+
     if [ "$package" = "bpm" ]; then
       bpm -S
     else
@@ -731,6 +773,8 @@ self_update () {
 
 # XXX: Location Change here
 cd "$tmp_dir" || (print_err "[ERR]: cannot cd into created tmp dir: $tmp_dir"; cleanup)
+
+[ -n "${verbose+x}" ] && print_info "[INFO]: all downloads will take place in $tmp_dir"
 
 [ $# -lt 1 ] && (print_err "not enough parameters supplied\n"; usage) && cleanup
 
@@ -795,7 +839,7 @@ while [ $# -gt 0 ]; do
       list_installed=1
       ;;
     -L|--list-avaliable)
-      list_avliable=1
+      list_avaliable=1
       ;;
     -V|--verbose)
       verbose=1
@@ -820,18 +864,31 @@ flag_pkgs="$(echo "$flag_pkgs" | head -c -2)" # getting rid of leftover space
 
 if [ -n "${download+x}" ]; then
   for package in $flag_pkgs; do
+    [ -n "${verbose+x}" ] && print_info "[INFO]: downloading $package"
+
     if [ -n "$(whereis -bs "$conflict" | awk -F ':' '{print $NF}')" ]; then
       print_info "[INFO]: $package already installed. skipping..."
       continue
     fi
 
     find_pkg "$package"
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Package found. Sourcing template..."
+
     source_template
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Template sourced. Preparing system..."
+
     prepare_system
+    [ -n "${verbose+x}" ] && print_info "[INFO]: System prepared. beginning download_stage_1..."
 
     download_stage_1
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Beginning download_stage_2..."
+
     download_stage_2
+    [ -n "${verbose+x}" ] && print_info "[INFO]: Beginning download_stage_3..."
+
     download_stage_3
+
+    [ -n "${verbose+x}" ] && print_info "[INFO]: $package downloaded successfully"
   done
 
   cleanup_success
@@ -839,6 +896,8 @@ fi
 
 if [ -n "${remove+x}" ]; then
   for package in $flag_pkgs; do
+    [ -n "${verbose+x}" ] && print_info "[INFO]: removing $package"
+
     find_pkg "$package"
     source_template
     remove_pkg
@@ -879,6 +938,7 @@ fi
 
 if [ -n "${redownload+x}" ]; then
   for package in $flag_pkgs; do
+    [ -n "${verbose+x}" ] && print_info "[INFO]: updating $package"
     bpm -r "$package" # remove package
     bpm -d "$package" # reinstall package (cannot update bpm)
   done
@@ -892,7 +952,7 @@ if [ -n "${list_installed+x}" ]; then
   cleanup_success
 fi
 
-if [ -n "${list_avliable+x}" ]; then
+if [ -n "${list_avaliable+x}" ]; then
   for package in "$repos_path"*; do
     path_to_package_template="$package/Template"
     source_template
