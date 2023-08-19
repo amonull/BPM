@@ -9,7 +9,7 @@ blue="\033[0;94m"
 
 [ "$(id -u)" -eq 0 ] && (printf '%b' "${red}[ERR]: bpm must be run as regular user (non-root)${normal}"; exit 1)
 
-readonly _version="1.1.3"
+readonly _version="1.1.4"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
@@ -775,6 +775,11 @@ flag_pkgs="$(echo "$flag_pkgs" | head -c -2)" # getting rid of leftover space
 
 if [ -n "${download+x}" ]; then
   for package in $flag_pkgs; do
+    if [ -n "$(whereis -bs "$conflict" | awk -F ':' '{print $NF}')" ]; then
+      print_info "[INFO]: $package already installed. skipping..."
+      continue
+    fi
+
     find_pkg "$package"
     source_template
     prepare_system
