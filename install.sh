@@ -40,12 +40,12 @@ case "$response" in
   [sS])
     system=1
     init_bpm_paths
-    ./src/bpm -R "$(dirname "$(realpath "$0")")/templates" -d bpm-allow-root
+    ./src/bpm -Y -R "$(dirname "$(realpath "$0")")/templates" -d bpm-allow-root
     ;;
   *)
     system=0
     init_bpm_paths
-    ./src/bpm -R "$(dirname "$(realpath "$0")")/templates" -d bpm
+    ./src/bpm -Y -R "$(dirname "$(realpath "$0")")/templates" -d bpm
     ;;
 esac
 
