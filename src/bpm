@@ -47,11 +47,15 @@ usage () {
       Have bpm update itself
     -F, --redownload
       Redownloads a package after uninstalling it
+    -Y, --yes
+      automatically says yes to all prompts
+    -N, --no
+      automatically says no to all prompts
     -I, --ignore-deps
       Doesn't check or install dependecies. It is recommended to not use this unless you know it is required
     -R, --repo
       changes default repo (/home/<user>/.local/share/BPM/repos/) to user specified
-    -p, --path
+    -P, --path
       changes where the binary is symlinked to (default /home/<user>/.local/bin/)
     -l, --list-installed
       lists all installed packages with their version
@@ -738,7 +742,7 @@ while [ $# -gt 0 ]; do
       repos_path="$2"
       shift
       ;;
-    -p|--path)
+    -P|--path)
       if [ $# -lt 2 ]; then
         print_err "[ERR]: not enough arguments for flag: -p"
         cleanup
