@@ -306,7 +306,15 @@ prepare_system () {
       for dep in $not_installed_bpm_deps; do
         echo "  $dep"
       done
-      ask "install those dependecies? [y/N]: "
+
+      if [ -n "${auto_no+x}" ]; then
+        response="n"
+      elif [ -n "${auto_yes+x}" ]; then
+        response="y"
+      else
+        ask "install those dependecies? [y/N]: "
+      fi
+
       case "$response" in
         [yY])
           for install_dep in $not_installed_bpm_deps; do
@@ -372,7 +380,14 @@ download_stage_2 () {
     cat "$pkg_build"
     print_info "<--- [INFO]: BUILD SCRIPT END --->\n"
 
-    ask "Run build script above? [y/N]: "
+    if [ -n "${auto_no+x}" ]; then
+      response="n"
+    elif [ -n "${auto_yes+x}" ]; then
+      response="y"
+    else
+      ask "Run build script above? [y/N]: "
+    fi
+
     case "$response" in
       [yY])
         if sh "$pkg_build"; then
@@ -383,7 +398,13 @@ download_stage_2 () {
         # sh "$pkg_build" && print_success "running $pkg_build inside $tmp_dir" || print_err "cannot run $pkg_build inside $tmp_dir"
         ;;
       *)
-        ask "Not running build script. Exit [Y/n]: "
+        if [ -n "${auto_no+x}" ]; then
+          response="n"
+        elif [ -n "${auto_yes+x}" ]; then
+          response="y"
+        else
+          ask "Not running build script. Exit [Y/n]: "
+        fi
         case "$response" in
           [nN])
             print_info "[INFO]: $pkg_build didn't run.\nskipping checksums to avoid errors..."
@@ -525,7 +546,14 @@ download_stage_3 () {
 
     file_premission="$(echo "$pkg_file_premissions" | grep -o "$file_name>[0-7][0-7][0-7]" || echo "644")"
 
-    ask "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
+    if [ -n "${auto_no+x}" ]; then
+      response="n"
+    elif [ -n "${auto_yes+x}" ]; then
+      response="y"
+    else
+      ask "move file: $tmp_dir$file_loc into $new_loc? [y/N]: "
+    fi
+
     case "$response" in
       [yY])
         if install -Dm"$file_premission" "$tmp_dir$file_loc" "$local_loc"; then
@@ -566,8 +594,15 @@ remove_pkg () {
   if [ "$pkg_bpm_deps" ]; then
     print_info "[INFO]: Found installed BPM deps: "
     for bpm_dep in $pkg_bpm_deps; do
-      ask "Remove $bpm_dep? [y/N]: "
-      case "$respone" in
+      if [ -n "${auto_no+x}" ]; then
+        response="n"
+      elif [ -n "${auto_yes+x}" ]; then
+        response="y"
+      else
+        ask "Remove $bpm_dep? [y/N]: "
+      fi
+
+      case "$response" in
         [yY])
           bpm -r "$bpm_dep"
           ;;
@@ -730,6 +765,12 @@ while [ $# -gt 0 ]; do
       ;;
     -F|--redownload)
       redownload=1
+      ;;
+    -Y|--yes)
+      auto_yes=1
+      ;;
+    -N|--no)
+      auto_no=1
       ;;
     -I|--ignore-deps)
       ignore_deps=1
