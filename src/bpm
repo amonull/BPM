@@ -845,7 +845,7 @@ while [ $# -gt 0 ]; do
       verbose=1
       ;;
     -v|--version)
-      echo "$_version"
+      echo "v$_version"
       cleanup_success
       ;;
     -h|-\?|--help)
