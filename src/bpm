@@ -12,7 +12,7 @@ if [ "$(id -u)" -eq 0 ]; then
   exit 1
 fi
 
-readonly _version="1.1.5"
+readonly _version="1.2.5"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
