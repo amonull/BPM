@@ -12,7 +12,7 @@ if [ "$(id -u)" -eq 0 ]; then
   exit 1
 fi
 
-readonly _version="1.2.6"
+readonly _version="1.2.7"
 
 packages_path="$HOME/.local/share/BPM/pkgs/" # in download_stage_3 pkg_name gets placed here (flag -p changes this location)
 repos_path="$HOME/.local/share/BPM/repos/" # templates stored here (flag -r changes this location)
@@ -233,10 +233,6 @@ source_template () {
     pkg_name="$(echo "$pkg_name" | sed "s|{VERSION}|$pkg_version|g")"
   fi
 
-  if [ -L "$pkg_build" ]; then
-    pkg_build="$(readlink "$pkg_build")"
-  fi
-
   for premission in $pkg_premissions; do
     if echo "$premission" | grep -qx "\{BIN\}>[0-7][0-7][0-7]" > /dev/null 2>&1; then # > /dev/null is needed to avoid stray \ in grep but that stray \ avoids errors
       pkg_bin_premissions="$(echo "$premission" | awk -F '>' '{print $2}')"
@@ -375,6 +371,10 @@ download_stage_2 () {
   # XXX: fix this before adding -V, --verbose options here
   if [ -d "$pkg_patches" ]; then
     for path in "$pkg_patches"*; do
+      if [ -L "$path" ]; then
+        path="$(readlink "$path")"
+      fi
+
       if [ ! -f "$path" ]; then
         print_warning "[WARNING]: patch: $path is not a file.\nskipping..."
         continue
@@ -387,6 +387,10 @@ download_stage_2 () {
   fi
 
   # [ BUILDING ]
+  if [ -L "$pkg_build" ]; then
+    pkg_build="$(readlink "$pkg_build")"
+  fi
+
   if [ -f "$pkg_build" ]; then
     print_info "\n<--- [INFO]: BUILD SCRIPT START --->"
     cat "$pkg_build"
@@ -462,6 +466,10 @@ download_stage_3 () {
 
   # [ MANPAGES ]
   for manpage in $pkg_manpages; do
+    if [ -L "$manpage" ]; then
+      manpage="$(readlink "$manpage")"
+    fi
+
     ends_with=$(basename "$manpage" | awk -F '.' '{ print $2 }')
     end_path="$man_outdir/man$ends_with/"
     ln_path="${manpages_path}man$ends_with/"
@@ -484,6 +492,10 @@ download_stage_3 () {
 
   # [ COMPLETION ]
   for completion in $pkg_completion; do
+    if [ -L "$completion" ]; then
+      completion="$(readlink "$completion")"
+    fi
+
     completion_end_path="$completions_outdir/$(basename "$completion")"
     case $completion in
       *.fish)
@@ -511,6 +523,10 @@ download_stage_3 () {
   done
 
   # [ DESKTOP ]
+  if [ -L "$pkg_desktop" ]; then
+    pkg_desktop="$(readlink "$pkg_desktop")"
+  fi
+
   desktop_end_path="$desktop_outdir/$(basename "$pkg_desktop")"
 
   if install -Dm644 "$pkg_desktop" "$desktop_end_path" 2> /dev/null; then
