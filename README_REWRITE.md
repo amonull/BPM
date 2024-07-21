@@ -6,11 +6,9 @@ Everything that needs to be done for the golang rewrite of this program
 
 - [ ] use libzstd to compress a dict repo file which holds pre-processed templates so that the user does not need to constantly run {AUTO->} sh scripts slowing down performance. And so that the user can install third-party repos if they choose to do (sync should take third-party repos into fact maybe add a file under BPM/repo such as repolist which can have a list of urls to download pre-processed, compressed BPM repos from)
 
-## Hooks
+# Consider
 
-- [ ] Extract hook
-- [ ] Install hook
-- [ ] Pre/Post-{extract,install} hook (define env params i.e. $XDG_BIN_DIR or other stuff)
+- [ ] consider changing from encoding/xml into https://github.com/lestrrat-go/libxml2 to also validate xml files and to treat the xml file as a tree
 
 # Check List
 
