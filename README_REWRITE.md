@@ -4,9 +4,7 @@ Everything that needs to be done for the golang rewrite of this program
 
 # Important Additions
 
-- [ ] Create hooks that are expected with default values (i.e. can be overridden) (add another stage in install for hooks)
-- [ ] Hooks can overwrite default functionality like checking if user has dependencies (having file hooks/dep_chk.sh with function _dep_chk()) overwrites how dependecies are ususally searched in system
-- [ ] Before running hooks warn user and print to debug output
+- [ ] use libzstd to compress a dict repo file which holds pre-processed templates so that the user does not need to constantly run {AUTO->} sh scripts slowing down performance. And so that the user can install third-party repos if they choose to do (sync should take third-party repos into fact maybe add a file under BPM/repo such as repolist which can have a list of urls to download pre-processed, compressed BPM repos from)
 
 ## Hooks
 

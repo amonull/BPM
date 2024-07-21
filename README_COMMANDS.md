@@ -28,6 +28,7 @@
 - [ ] check (checks for updates)
 - [ ] search (searches for packages inside a repo)
 - [ ] list (list all installed packages)
+- [ ] sync (syncs template files with repo)
 
 
 # Flags to template
