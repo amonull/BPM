@@ -1,3 +1,10 @@
+# IMPORTANT
+
+This branch in constantly undergoing changes and nothing in README* or doc/ can be taken as being correct or not outdated for this branch.
+
+I will try to update them as regularly as possible but untill this program rewrite is complete the doc files cannot be assumed to be correct
+
+
 # BPM
 
 BPM used to stand for basic package manager but no longer stands for that as BPM is not a package manager, it is instead a program that is designed to automate and centralize packages that are built from source.
