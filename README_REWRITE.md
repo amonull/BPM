@@ -8,7 +8,9 @@ Everything that needs to be done for the golang rewrite of this program
 
 # Consider
 
+- [ ] add a repolist file under BPM/repo/ which holds a list of urls that processed repos can be downloaded locally and used as processed repos
 - [ ] consider changing from encoding/xml into https://github.com/lestrrat-go/libxml2 to also validate xml files and to treat the xml file as a tree
+- [ ] create a threadpool to process multiple raw templates to enter into repo file
 
 # Check List
 
