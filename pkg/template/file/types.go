@@ -1,4 +1,4 @@
-package template
+package file
 
 // The main template type holding all information that is inside a template. Note
 // this type does not hold any raw types that is handled by other subtypes.
