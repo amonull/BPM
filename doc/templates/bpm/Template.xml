@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pkg>
+  <name>bpm<\name>
+  <version auto="true" sh="/bin/sh">curl -s "https://github.com/amonull/BPM/tags" | grep "Link--primary Link" | awk -F '</a>' '{print $1}' | awk -F '>' '{print $NF}' | tr -d 'v' | head -n 1<\version>
+  <revision>1<\revision>
+  <url>https://github.com/amonull/BPM.git<\url>
+    
+  <bpm_deps><\bpm_deps>
+  <host_deps pkg_mgr="xbps">
+    <dep any="true">bash dash<\dep>
+      <dep>git<\dep>
+      <dep>curl<\dep>
+      <dep>grep<\dep>       
+      <dep>awk<\dep>
+      <dep>which<\dep>
+      <dep>find<\dep>
+      <dep>install<\dep>
+  <\host_deps>
+
+  <conflicts>bpm-allow-root<\conflicts>
+  <checksum><\checksum>
+  <permissions>{{BIN}}>>744<\permissions>
+  <manpages><\manpages>
+  <completions><\completions>
+  <desktop><\desktop>
+  <files>template/bpm/Template>>{{HOME}}/.local/share/BPM/repos/Template template/bpm/build.sh>>{{HOME}}/.local/share/BPM/repos/bpm/build.sh<\files>
+<\pkg>

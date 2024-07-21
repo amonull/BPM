@@ -6,17 +6,10 @@ This program was built for users that use package managers that do not have all 
 
 I've tried to make template creation as simple as possible to allow basically anybody to be able to create these templates and to make them almost fully automated. [information on templates and how to make them](https://github.com/amonull/BPM/tree/main/templates)
 
-[For example templates check here](https://github.com/amonull/BPM-Templates)
+[For example templates check here](doc/templates/README.md)
 
 # Dependecies:
-- posix shell (like dash or bash)
-- grep
-- awk
-- whereis
-- find
-- curl
-- git
-- install
+- go
 
 # Security Risks
 
