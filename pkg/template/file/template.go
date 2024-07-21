@@ -6,20 +6,20 @@ import (
 )
 
 func New(templatePath string) (*Template, error) {
+	template := new(Template)
+	fileData := make([]byte, 100)
 	templateFile, err := os.Open(templatePath)
 	if err != nil {
 		return nil, err
 	}
 	defer templateFile.Close()
 
-	fileData := make([]byte, 100)
-
 	_, err = templateFile.Read(fileData)
 	if err != nil {
 		return nil, err
 	}
 
-	template, _ := xml.Marshal(fileData)
+	err = xml.Unmarshal(fileData, &template)
 
 	return template, nil
 }
